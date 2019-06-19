@@ -1,0 +1,5 @@
+__pycache__/
+.vscode/
+brat_preprocessing/annotated
+test_implementation/glove.6B
+data/
