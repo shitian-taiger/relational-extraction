@@ -196,6 +196,20 @@ class NER(AllenModels):
         return entities, ent_idx_map
 
 
+class DepParse(AllenModels):
+
+    def __init__(self):
+        super().__init__("dependency-parsing", model_configs["dependency-parsing"])
+
+
+    def get_tree(self, sentence):
+
+        predicted = self.predictor.predict_json({"sentence" : sentence})
+        predicted_heads = predicted["predicted_heads"] # Level of word
+        tree = predicted["hierplane_tree"]["root"]
+        return tree
+
+
 def main(sentence: str):
     ''' Test OIE
     '''

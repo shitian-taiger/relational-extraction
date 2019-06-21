@@ -1,0 +1,408 @@
+
+
+
+
+
+
+
+
+
+
+In O
+London O
+, O
+prices O
+finished O
+at O
+intraday O
+peaks O
+, O
+comforted O
+by O
+a O
+reassuring O
+early O
+performance O
+on O
+Wall O
+Street O
+and O
+news O
+that O
+the O
+British B-ARG1
+government O
+will O
+waive B-V
+its O
+` O
+` O
+golden O
+share O
+' O
+' O
+in O
+auto O
+maker O
+Jaguar B-ARG2
+. O
+
+
+
+
+
+
+According O
+to O
+industry O
+analysts O
+, O
+Chrysler O
+plants O
+most O
+likely O
+to O
+close O
+are O
+the O
+St. O
+Louis O
+No O
+. O
+1 O
+facility O
+, O
+which O
+builds O
+Chrysler O
+LeBaron O
+and O
+Dodge O
+Daytona O
+models O
+; O
+the O
+Toledo O
+, O
+Ohio O
+, O
+Jeep O
+plant O
+, O
+which O
+dates O
+back O
+to O
+the O
+early O
+1900s O
+; O
+and O
+two O
+Canadian B-ARG1
+plants O
+that O
+build B-V
+the O
+Jeep O
+Wrangler O
+and O
+Chrysler B-ARG2
+'s O
+full O
+- O
+sized O
+vans O
+. O
+
+According O
+to O
+industry O
+analysts O
+, O
+Chrysler O
+plants O
+most O
+likely O
+to O
+close O
+are O
+the O
+St. O
+Louis O
+No O
+. O
+1 O
+facility O
+, O
+which O
+builds O
+Chrysler O
+LeBaron O
+and O
+Dodge O
+Daytona O
+models O
+; O
+the O
+Toledo O
+, O
+Ohio O
+, O
+Jeep B-ARG2
+plant O
+, O
+which O
+dates O
+back O
+to O
+the O
+early O
+1900s O
+; O
+and O
+two O
+Canadian B-ARG1
+plants O
+that O
+build B-V
+the O
+Jeep O
+Wrangler O
+and O
+Chrysler O
+'s O
+full O
+- O
+sized O
+vans O
+. O
+
+According O
+to O
+industry O
+analysts O
+, O
+Chrysler O
+plants O
+most O
+likely O
+to O
+close O
+are O
+the O
+St. O
+Louis O
+No O
+. O
+1 O
+facility O
+, O
+which O
+builds O
+Chrysler O
+LeBaron O
+and O
+Dodge O
+Daytona O
+models O
+; O
+the O
+Toledo O
+, O
+Ohio O
+, O
+Jeep O
+plant O
+, O
+which O
+dates O
+back O
+to O
+the O
+early O
+1900s O
+; O
+and O
+two O
+Canadian B-ARG1
+plants O
+that O
+build B-V
+the O
+Jeep B-ARG2
+Wrangler I-ARG2
+and O
+Chrysler O
+'s O
+full O
+- O
+sized O
+vans O
+. O
+
+According O
+to O
+industry O
+analysts O
+, O
+Chrysler O
+plants O
+most O
+likely O
+to O
+close O
+are O
+the O
+St. O
+Louis O
+No O
+. O
+1 O
+facility O
+, O
+which O
+builds O
+Chrysler O
+LeBaron O
+and O
+Dodge O
+Daytona O
+models O
+; O
+the O
+Toledo O
+, O
+Ohio O
+, O
+Jeep O
+plant O
+, O
+which O
+dates O
+back O
+to O
+the O
+early O
+1900s O
+; O
+and O
+two O
+Canadian B-ARG1
+plants O
+that O
+build B-V
+the O
+Jeep O
+Wrangler O
+and O
+Chrysler B-ARG2
+'s O
+full O
+- O
+sized O
+vans O
+. O
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Two O
+years O
+ago O
+, O
+most O
+of O
+the O
+smaller O
+makers O
+joined O
+under O
+the O
+Microsoft B-ARG1
+Corp. I-ARG1
+umbrella O
+to O
+adopt B-V
+a O
+version O
+of O
+the O
+American O
+IBM B-ARG2
+AT O
+standard O
+. O
+
+
+
+
+
+
+An O
+advisory O
+committee O
+of O
+the O
+Food B-ARG1
+and I-ARG1
+Drug I-ARG1
+Administration I-ARG1
+recommended B-V
+that O
+the O
+agency O
+approve O
+Eminase B-ARG2
+, O
+the O
+company O
+'s O
+heart O
+drug O
+. O
+
+
+Even O
+some O
+Democrats B-ARG1
+concede B-V
+that O
+there O
+is O
+probably O
+a O
+majority O
+in O
+the O
+Senate B-ARG2
+that O
+favors O
+some O
+kind O
+of O
+broad O
+capital O
+- O
+punishment O
+measure O
+. O

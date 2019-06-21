@@ -1,9 +1,11 @@
 import re
+import json
 import pandas as pd
+from constants import Relations, POS
 from string import punctuation
 from typing import Dict, List, Tuple
 
-def get_sentences(file_path: str):
+def get_sentences_oie(file_path: str):
     # Generator for sentences from `train.oie.conll` format
 
     df = pd.read_csv(file_path, sep="\t")
@@ -34,6 +36,42 @@ def get_sentences(file_path: str):
             else:
                 sentence = " ".join([sentence, word])
 
-if __name__ == "__main__":
-    for sentence in get_sentences("../data/OIE/train.oie.conll"):
-        print(sentence)
+
+def get_sentences_ent_rel(file_path: str):
+    with open(file_path, "r") as f:
+        for line in f:
+            try:
+                parsed = json.loads(line)
+                yield parsed["evidences"][0]["snippet"]
+            except:
+                continue
+
+
+
+class DPHelper:
+
+    @staticmethod
+    def is_proper_noun(word: Dict) -> bool:
+        return word["attributes"][0] == POS.PROPER_NOUN # TODO Find out why there can be multiple attributes
+
+    @staticmethod
+    def get_subject(root) -> Dict:
+        # Nominal subject or clausal subject
+        for child in root["children"]:
+            if child["link"] == Relations.NOMINAL_SUBJECT or child["link"] == Relations.CLAUSAL_SUBJECT:
+                return child
+
+    @staticmethod
+    def get_object(root) -> Dict:
+        for child in root["children"]:
+            if child["link"] == Relations.DIRECT_OBJECT or child["link"] == Relations.INDIRECT_OBJECT:
+                return child
+
+    @staticmethod
+    def get_child_type(word: Dict, child_type: Relations) -> List[Dict]:
+        return list(filter(lambda child: child["link"] == child_type, word["children"]))
+
+
+    @staticmethod
+    def is_leaf(word: Dict) -> bool:
+        return "children" in word
