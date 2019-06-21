@@ -1,12 +1,15 @@
-from utils import get_sentences
+from utils import get_sentences_oie, get_sentences_ent_rel
 from typing import Tuple, List, Iterator, Dict
-from ner import NER
-from oie import OpenIE
+from allen_models import OpenIE, NER
 import spacy
 
+PRINT_OIE_TUPLES = False
 PRINT_SENTENCE = True # Only print for questioning sentence validity
 PRINT_NAMED_ENTITIES = False
-TEST_SENTENCE = False
+
+TEST_SENTENCES = False
+OIE_SENTENCES = False
+WIKI_SENTENCES = True
 
 class DataGenerator:
 
@@ -39,7 +42,7 @@ class DataGenerator:
             # print("No named entities in sentence")
             return ""
 
-        oie_tuples = self.filter_oie_tuples(self.open_ie.get_tuples(sentence)) # Get relational tuples from oie extractor, filtered conditionally
+        oie_tuples = self.open_ie.get_tuples(sentence) # Get relational tuples from oie extractor, filtered conditionally
 
         concat_instances = ""
         for rel_tuple in oie_tuples:
@@ -50,10 +53,6 @@ class DataGenerator:
 
         return concat_instances
 
-
-    def filter_oie_tuples(self, tuples: List[Tuple]):
-        mask = lambda t: not t[1] == "is"
-        return list(filter(mask, tuples))
 
     def get_tagged_entities(self, sentence: str):
         """ Retrieves NER tagged entities and tags the given sentence accordingly
@@ -134,20 +133,18 @@ class DataGenerator:
 
         for sub_idx in sub_idxs:
             for obj_idx in obj_idxs:
-
-                '''
-                Printing of relational tuple
-                '''
                 sub = [self.ent_tagged_sent[i]["text"] for i in range(sub_idx[0], sub_idx[1] + 1)]
-                rel = self.ent_tagged_sent[rel_idx]["text"]
+                rel = [self.ent_tagged_sent[i]["text"] for i in range(rel_idx[0], rel_idx[1] + 1)]
                 obj = [self.ent_tagged_sent[i]["text"] for i in range(obj_idx[0], obj_idx[1] + 1)]
-
                 '''
                 Manual user input
                 '''
                 if PRINT_SENTENCE:
                     print(" ===================== POTENTIAL INSTANCE =========================")
                     print(self.sentence)
+                if PRINT_OIE_TUPLES:
+                    print(" ===================== OIE TUPLE =========================")
+                    print(sub, rel, obj)
                 dec = False
                 while not dec:
                     tag = input("Valid? - [y/n]: %s - %s - %s" % (sub, rel, obj))
@@ -171,7 +168,6 @@ class DataGenerator:
             tagged (str): Formatted BIO tagged instance
         """
         tagged = ""
-        relation = self.ent_tagged_sent[rel_idx]["text"] # Limited to verbs
         for i in range(len(self.ent_tagged_sent)):
             tag = "O"
             token = self.ent_tagged_sent[i]
@@ -180,8 +176,8 @@ class DataGenerator:
                 tag = "B-ARG1" if i == sub_idx[0] else "I-ARG1"
             elif (i in range(obj_idx[0], obj_idx[1] + 1)):
                 tag = "B-ARG2" if i == obj_idx[0] else "I-ARG2"
-            elif (i == rel_idx):
-                tag = "B-V"
+            elif (i in range(rel_idx[0], rel_idx[1])):
+                tag = "B-V" if i == rel_idx[0] else "I-V"
             tagged_word = " ".join([word, tag])
             tagged = "\n".join([tagged, tagged_word])
 
@@ -199,8 +195,7 @@ class DataGenerator:
 if __name__ == "__main__":
     generator = DataGenerator(use_allen = True)
 
-
-    if TEST_SENTENCE:
+    if TEST_SENTENCES:
         sentences = ["Lillian lux, the matriarch of a celebrated yiddish theatrical family who performed for decades as an actress and singer in New York and around the world, died on saturday at St. Vincent's hospital in Manhattan.",
                     "Courtalds' spinoff reflects pressure on British industry to boost share prices beyond the reach of corporate raiders.",
                     "In 1971 , the FDA banned the use of Amphetamines after studies linked it to cancer and other problems in daughters of women who took the drug.",
@@ -210,12 +205,22 @@ if __name__ == "__main__":
         sentence = sentences[4]
         generator.generate(sentence)
 
-    if not TEST_SENTENCE:
+    if OIE_SENTENCES:
         with open("./generated.txt", "a+") as f:
-            for sentence in get_sentences("../data/OIE/train.oie.conll"):
+            for sentence in get_sentences_oie("../data/OIE/train.oie.conll"):
                 instance = generator.generate(sentence)
                 if not instance == "":
                     f.write(instance)
                 else:
                     print("No extracted NE relation pairs")
                     continue
+
+    if WIKI_SENTENCES:
+        file_name = "../data/RE/GoogleTagged/20130403-institution.json"
+        for sentence in get_sentences_ent_rel(file_name):
+            print(sentence)
+            spacy_nlp = spacy.load("en_core_web_sm")
+            doc = spacy_nlp(sentence)
+            for sent in doc.sents:
+                instance = generator.generate(sent.string.strip())
+
