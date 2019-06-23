@@ -7,7 +7,9 @@ class Relations:
     DIRECT_OBJECT = "dobj"
     INDIRECT_OBJECT = "iobj"
     NOMINAL_SUBJECT = "nsubj"
-    NOUN = "nn" # noun group
+    NOUN = "nn" # noun as part of noun object group
+    PASSIVE_NOM_SUBJECT = "nsubjpass"
+    POSSESSION_BY = "poss"
     PREPOSITION = "prep"
     PREDICATE_OBJECT = "pobj"
     PUNCTUATION = "punct"

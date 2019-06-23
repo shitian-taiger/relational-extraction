@@ -55,23 +55,46 @@ class DPHelper:
         return word["attributes"][0] == POS.PROPER_NOUN # TODO Find out why there can be multiple attributes
 
     @staticmethod
-    def get_subject(root) -> Dict:
-        # Nominal subject or clausal subject
+    def is_noun(word: Dict) -> bool:
+        return DPHelper.is_proper_noun(word) or \
+        word["attributes"][0] == POS.NOUN # TODO Find out why there can be multiple attributes
+
+    @staticmethod
+    def has_possession_by(word: Dict) -> bool:
+        return len(DPHelper.get_child_type(word, Relations.POSSESSION_BY)) > 0
+
+    @staticmethod
+    def get_possessor(word: Dict) -> bool:
+        assert(DPHelper.is_noun(word))
+        return DPHelper.get_child_type(word, Relations.POSSESSION_BY)[0]
+
+    @staticmethod
+    def get_subject(root: Dict) -> Dict:
+        # Nominal subject or clausal subject (Assume 1)
         for child in root["children"]:
-            if child["link"] == Relations.NOMINAL_SUBJECT or child["link"] == Relations.CLAUSAL_SUBJECT:
+            if child["link"] == Relations.NOMINAL_SUBJECT or \
+               child["link"] == Relations.CLAUSAL_SUBJECT or \
+               child["link"] == Relations.PASSIVE_NOM_SUBJECT:
                 return child
 
     @staticmethod
-    def get_object(root) -> Dict:
+    def get_object(root: Dict) -> Dict:
         for child in root["children"]:
-            if child["link"] == Relations.DIRECT_OBJECT or child["link"] == Relations.INDIRECT_OBJECT:
+            if child["link"] == Relations.DIRECT_OBJECT or \
+               child["link"] == Relations.INDIRECT_OBJECT:
                 return child
 
     @staticmethod
     def get_child_type(word: Dict, child_type: Relations) -> List[Dict]:
-        return list(filter(lambda child: child["link"] == child_type, word["children"]))
+        if not word.get("children"):
+            return[]
+        else:
+            return list(filter(lambda child: child["link"] == child_type, word["children"]))
+
 
 
     @staticmethod
     def is_leaf(word: Dict) -> bool:
-        return "children" in word
+        return "children" not in word
+
+
