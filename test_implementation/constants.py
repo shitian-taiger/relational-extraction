@@ -3,6 +3,8 @@
 class Relations:
     # words links
     CLAUSAL_SUBJECT = "csubj"
+    OPEN_CLAUSAL_COMPLEMENT = "xcomp"
+    CLAUSAL_COMPLEMENT = "ccomp"
     CONJUNCTION = "conj"
     DIRECT_OBJECT = "dobj"
     INDIRECT_OBJECT = "iobj"

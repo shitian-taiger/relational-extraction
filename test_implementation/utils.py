@@ -92,7 +92,6 @@ class DPHelper:
             return list(filter(lambda child: child["link"] == child_type, word["children"]))
 
 
-
     @staticmethod
     def is_leaf(word: Dict) -> bool:
         return "children" not in word

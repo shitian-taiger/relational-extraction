@@ -6,11 +6,13 @@ from utils import DPHelper
 from typing import Dict, List
 from allen_models import DepParse
 
-def named_sub_obj(root: Dict) -> List[str]:
+# ============================================== CASES =============================================
+
+def sub_obj_vbroot(root: Dict) -> List[str]:
     relations = []
     '''
-    SUBJ ------- ROOT -------- OBJ
-                  |
+    SUBJ ------- ROOT(VB) -------- OBJ
+                    |
     '''
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION): # Prepositions (eg. as)
         '''
@@ -30,7 +32,30 @@ def named_sub_obj(root: Dict) -> List[str]:
             assert(len(pred_objs) == 1) # TODO Similar to above, refactor
             nouns = get_all_nouns(pred_objs[0])
             relations = relations + nouns
+
+    # Conjuncting relations for subj and obj
+    for conj in DPHelper.get_child_type(root, Relations.CONJUNCTION):
+        if conj["attributes"][0] == POS.NOUN:
+            relations = relations + get_all_nouns(conj)
+
     return relations
+
+def x_comp(open_comp: Dict):
+    '''
+    ---- XCOMP ---
+
+    Same extraction mechanism as if root were noun, however,
+    We should probably allow verbial relations in clausal complements
+    '''
+    objs, relations = [], []
+    if DPHelper.is_noun(open_comp):
+        return [], []
+    else: # Verb case
+        relations = relations + [open_comp["word"]]
+        dir_obj = DPHelper.get_child_type(open_comp, Relations.DIRECT_OBJECT)[0]
+        objs = objs + get_all_proper_nouns(dir_obj)
+
+    return objs, relations
 
 def subjpass(root: Dict):
     '''
@@ -56,6 +81,26 @@ def subjpass(root: Dict):
     return obj, relations
 
 
+def nnroot_subj(root: Dict):
+    '''
+    Noun root with only nominal subject, find entity in prepositions
+
+    NSUBJ ------- ROOT(NN)
+                       |
+    '''
+    relations = [root["word"]]
+    for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
+        pred_objs = DPHelper.get_child_type(prep, Relations.PREDICATE_OBJECT)
+        assert(len(pred_objs) == 1) # TODO Similar to above, refactor
+        objs: List[Dict] = [] # Actual Named entity to find
+        pred_obj = pred_objs[0]
+
+        if DPHelper.is_proper_noun(pred_obj):
+            objs = objs + get_all_proper_nouns(pred_obj) # Possibility of multiple conjuncting proper
+        else:
+            continue
+    return objs, relations
+
 
 
 def nnp_root(root: Dict):
@@ -77,6 +122,9 @@ def nnp_root(root: Dict):
         else:
             continue
     return subj, relations, obj
+
+
+# ========================================= DRIVER =================================================
 
 def generate(root: Dict):
     # Is this applicable only to root?
@@ -111,25 +159,44 @@ def generate(root: Dict):
         if DPHelper.is_proper_noun(subj) and DPHelper.is_proper_noun(obj):
             print("subj: %s" % subj["word"])
             print("obj: %s" % obj["word"])
-            relations = named_sub_obj(root)
+            relations = sub_obj_vbroot(root) # Relations between subject and object
+            print("relations %s" % relations)
+
+            # Relations within clausal complements
+            open_comp: List[Dict] = DPHelper.get_child_type(root, Relations.OPEN_CLAUSAL_COMPLEMENT)
+            comp: List[Dict] = DPHelper.get_child_type(root, Relations.CLAUSAL_COMPLEMENT)
+            if open_comp: # Assume for now open_comps all relate to object
+                print("subj: %s" % obj["word"])
+                objs, xcomp_relations = x_comp(open_comp[0]) # TODO Can there be multiple xcomps?
+                print("objs: %s" % objs)
+                print("xcomp_relations %s" % xcomp_relations)
+
+            return
 
     print("relations %s" % relations)
 
+# ========================================= HELPERS =================================================
 
 def get_all_nouns(noun: Dict) -> List[str]:
-    """
-    Finds all noun phrases with given word as root, also look for conjunctions
-    """
+    # Finds all noun phrases with given word as root, also look for conjunctions
     nouns = []
     nouns.append(get_noun_phrase(noun))
     for conj in DPHelper.get_child_type(noun, Relations.CONJUNCTION): # Conjuncting predicate objects are also relations
         nouns.append(get_noun_phrase(conj))
     return nouns
 
+def get_all_proper_nouns(noun: Dict) -> List[str]:
+    # Finds all proper noun phrases with given word as root, also look for conjunctions
+    proper_nouns = []
+    proper_nouns.append(get_noun_phrase(noun)) # Assume root noun is proper noun
+    for conj in DPHelper.get_child_type(noun, Relations.CONJUNCTION): # Conjuncting predicate objects are also relations
+        if DPHelper.is_proper_noun:
+            proper_nouns.append(get_noun_phrase(conj))
+    return proper_nouns
+
+
 def get_noun_phrase(noun: Dict) -> str:
-    """
-    Given a noun, include all ADJMOD and NN to get full noun phrase
-    """
+    # Given a noun, include all ADJMOD and NN to get full noun phrase
     if not noun.get("children"):
         return noun["word"]
     else:
@@ -146,19 +213,17 @@ def get_noun_phrase(noun: Dict) -> str:
         return "".join([full, noun["word"]]) if not full else " ".join([full, noun["word"]])
 
 
-
-
 if __name__ == "__main__":
 
     dep_parse = DepParse()
 
     sentences = [
-        "Contaldo was a good friend of Ronalod",
+        "Contaldo was a good friend of Jose Calderon",
         "Federer hired Annacone as his coach.",
         "Federer hired Annacone as his coach and business partner and as a permanent friend.",
         "Annacone was hired as Federer's coach.",
         "Hired, was Annacone, as Federer's coach.",
-        "Annacone coached Federer to win multiple Wimbledon Championships."
+        "Annacone coached Federer to win multiple Wimbledon Championships, and became his best friend."
     ]
 
     for sentence in sentences:
