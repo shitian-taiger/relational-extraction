@@ -1,8 +1,8 @@
-from constants import Relations, POS
-from utils import DPHelper
 from typing import Dict, List
-from allen_models import DepParse
-from dep_parse import *
+from .constants import Relations, POS
+from .general import DPHelper
+from .general import *
+from .evaluator import *
 
 # ========================================= DRIVER =================================================
 
@@ -68,24 +68,3 @@ def generate(root: Dict):
             return
 
     print("relation(s): %s" % relations)
-
-
-if __name__ == "__main__":
-
-    dep_parse = DepParse()
-
-    sentences = [
-        "Yoda and ObiWan were the mentors of Skywalker.",
-        "Contaldo was a good friend of Jose Calderon",
-        "Federer hired Annacone as his coach.",
-        "Federer hired Annacone as his coach and business partner and as a best friend.",
-        "Annacone was hired as Federer's coach.",
-        "Hired, was Annacone, as Federer's coach.",
-        "Bojack Horseman resides in Hollywoo, California, and works on Detective X.",
-        "Annacone coached Federer to win multiple Wimbledon Championships, and in turn became his best friend.", # TODO Handle verbs with concrete form
-    ]
-
-    for sentence in sentences:
-        root = dep_parse.get_tree(sentence)
-        print("\n%s" % sentence)
-        generate(root)

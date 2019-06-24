@@ -1,7 +1,7 @@
-from allen_models import DepParse
-from constants import Relations, POS
 from typing import Dict, List
-from utils import *
+from .constants import Relations, POS
+from .general import DPHelper
+from .general import *
 
 def sub_obj_vbroot(root: Dict) -> List[str]:
     relations = []
