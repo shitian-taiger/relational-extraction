@@ -1,12 +1,7 @@
-import sys
-sys.path.insert(0, "/Users/shitian/Github/allennlp")
-
-from constants import Relations, POS
-from utils import DPHelper
-from typing import Dict, List
 from allen_models import DepParse
-
-# ============================================== CASES =============================================
+from constants import Relations, POS
+from typing import Dict, List
+from utils import *
 
 def sub_obj_vbroot(root: Dict) -> List[str]:
     relations = []
@@ -84,6 +79,7 @@ def subjpass(root: Dict):
 def nnroot_subj(root: Dict):
     '''
     Noun root with only nominal subject, find entity in prepositions
+    - Differs from above in terms of nominality of object
 
     NSUBJ ------- ROOT(NN)
                        |
@@ -102,8 +98,29 @@ def nnroot_subj(root: Dict):
     return objs, relations
 
 
+def vbroot_subj(root: Dict):
+    '''
+    Special case for non passive subject and verb root but still valid relation
 
-def nnp_root(root: Dict):
+    NSUBJ ------- ROOT(VB)
+                       |
+    '''
+    objs, aux_relations = [], []
+    for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
+        pred_obj = get_predicate_object(prep)
+        if DPHelper.is_proper_noun(pred_obj):
+            objs = objs + get_all_proper_nouns(pred_obj)
+
+    for conj in DPHelper.get_child_type(root, Relations.CONJUNCTION):
+        aux_relations = aux_relations + [conj["word"]] # TODO May not be legitimate relation
+        for prep in DPHelper.get_child_type(conj, Relations.PREPOSITION):
+            pred_obj = get_predicate_object(prep)
+            objs = objs + get_all_proper_nouns(pred_obj)
+
+    return objs, aux_relations
+
+
+def nnproot(root: Dict):
     '''
     Root proper noun is passive subject, attempt finding active obj in predicate object of preposition
 
@@ -124,109 +141,3 @@ def nnp_root(root: Dict):
     return subj, relations, obj
 
 
-# ========================================= DRIVER =================================================
-
-def generate(root: Dict):
-    # Is this applicable only to root?
-    subj = DPHelper.get_subject(root)
-    obj = DPHelper.get_object(root)
-    relations = []
-
-    if subj == None and obj == None:
-        print("============== No direct SUBJ and OBJ ================")
-        if DPHelper.is_proper_noun(root):
-            subj, relations, obj = nnp_root(root)
-            print("subj (passive): %s" % subj)
-            print("obj (active): %s " % obj)
-    elif subj == None:
-        print("============ Only OBJ present ===============" )
-    elif obj == None:
-        print("============= Only SUBJ present ===============")
-        # Passive subject, look into preposition for predicate object with possessive
-        if DPHelper.is_proper_noun(subj) and subj["link"] == Relations.PASSIVE_NOM_SUBJECT:
-            print("subj (passive): %s" % subj["word"])
-            obj, relations = subjpass(root)
-            print("obj (active): %s " % obj)
-
-        # Possible case where root is noun and hence subject is not labeled passive but relation still exists
-        elif DPHelper.is_noun(root) and DPHelper.is_proper_noun(subj):
-            print("subj (passive): %s" % subj["word"])
-            obj, relations = nnroot_subj(root)
-            print("obj (active): %s " % obj)
-    else:
-        print("============ SUBJ and OBJ present =============")
-        # Simplest case: NE subject and object
-        if DPHelper.is_proper_noun(subj) and DPHelper.is_proper_noun(obj):
-            print("subj: %s" % subj["word"])
-            print("obj: %s" % obj["word"])
-            relations = sub_obj_vbroot(root) # Relations between subject and object
-            print("relations %s" % relations)
-
-            # Relations within clausal complements
-            open_comp: List[Dict] = DPHelper.get_child_type(root, Relations.OPEN_CLAUSAL_COMPLEMENT)
-            comp: List[Dict] = DPHelper.get_child_type(root, Relations.CLAUSAL_COMPLEMENT)
-            if open_comp: # Assume for now open_comps all relate to object
-                print("subj: %s" % obj["word"])
-                objs, xcomp_relations = x_comp(open_comp[0]) # TODO Can there be multiple xcomps?
-                print("objs: %s" % objs)
-                print("xcomp_relations %s" % xcomp_relations)
-
-            return
-
-    print("relations %s" % relations)
-
-# ========================================= HELPERS =================================================
-
-def get_all_nouns(noun: Dict) -> List[str]:
-    # Finds all noun phrases with given word as root, also look for conjunctions
-    nouns = []
-    nouns.append(get_noun_phrase(noun))
-    for conj in DPHelper.get_child_type(noun, Relations.CONJUNCTION): # Conjuncting predicate objects are also relations
-        nouns.append(get_noun_phrase(conj))
-    return nouns
-
-def get_all_proper_nouns(noun: Dict) -> List[str]:
-    # Finds all proper noun phrases with given word as root, also look for conjunctions
-    proper_nouns = []
-    proper_nouns.append(get_noun_phrase(noun)) # Assume root noun is proper noun
-    for conj in DPHelper.get_child_type(noun, Relations.CONJUNCTION): # Conjuncting predicate objects are also relations
-        if DPHelper.is_proper_noun:
-            proper_nouns.append(get_noun_phrase(conj))
-    return proper_nouns
-
-
-def get_noun_phrase(noun: Dict) -> str:
-    # Given a noun, include all ADJMOD and NN to get full noun phrase
-    if not noun.get("children"):
-        return noun["word"]
-    else:
-        full = ""
-        for child in noun["children"]:
-            if not DPHelper.is_leaf(child):
-                continue
-            elif child["link"] == Relations.ADJECTIVAL_MODIFIER:
-                full = child["word"] # FIXME Assume singular adjectival modifiers for now
-            elif child["link"] == Relations.NOUN:
-                full = " ".join([full, child["word"]])
-            else:
-                continue
-        return "".join([full, noun["word"]]) if not full else " ".join([full, noun["word"]])
-
-
-if __name__ == "__main__":
-
-    dep_parse = DepParse()
-
-    sentences = [
-        "Contaldo was a good friend of Jose Calderon",
-        "Federer hired Annacone as his coach.",
-        "Federer hired Annacone as his coach and business partner and as a permanent friend.",
-        "Annacone was hired as Federer's coach.",
-        "Hired, was Annacone, as Federer's coach.",
-        "Annacone coached Federer to win multiple Wimbledon Championships, and became his best friend."
-    ]
-
-    for sentence in sentences:
-        root = dep_parse.get_tree(sentence)
-        print("\n%s" % sentence)
-        generate(root)

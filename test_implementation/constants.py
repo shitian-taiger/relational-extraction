@@ -1,7 +1,7 @@
 
-
 class Relations:
     # words links
+    APPOSITION = "appos"
     CLAUSAL_SUBJECT = "csubj"
     OPEN_CLAUSAL_COMPLEMENT = "xcomp"
     CLAUSAL_COMPLEMENT = "ccomp"
@@ -20,3 +20,10 @@ class Relations:
 class POS:
     PROPER_NOUN = "NNP"
     NOUN = "NN"
+    NOUN_PLURAL = "NNS"
+    VERB_BASE = "VB"
+    VERB_PAST = "VBD"
+    VERB_GERUND = "VBG" # Pseudo nouns
+    VERB_PAST_PARTICIPLE = "VBN"
+    VERB_3SP = "VBZ" # 3rd person singular present
+    VERB_NON_3SP = "VBP"
