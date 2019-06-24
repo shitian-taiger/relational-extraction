@@ -14,6 +14,7 @@ class Relations:
     PASSIVE_NOM_SUBJECT = "nsubjpass"
     POSSESSION_BY = "poss"
     PREPOSITION = "prep"
+    PREPOSITIONAL_COMP = "pcomp"
     PREDICATE_OBJECT = "pobj"
     PUNCTUATION = "punct"
 

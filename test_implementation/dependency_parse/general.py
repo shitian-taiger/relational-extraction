@@ -4,8 +4,24 @@ from .constants import Relations, POS
 # ========================================= General Methods =================================================
 
 
+def appositional_relations(appos: Dict):
+    '''
+    -------------------POBJ
+                        |
+                       APPOS
+    Assumed pobj is NNP and subj is pre-determined, this hence represents external appositional relation
+    '''
+    objs, relations = [], []
+    for prep in DPHelper.get_child_type(appos, Relations.PREPOSITION):
+        pred_obj = get_predicate_object(prep)
+        if DPHelper.is_proper_noun(pred_obj):
+            relations = relations + [get_noun_phrase(appos)]
+            objs = get_all_proper_nouns(pred_obj)
+    return objs, relations
+
+
 def recursive_prep_search(verb: Dict, pobj: Dict):
-    """
+    '''
     VARIABLE ------------- ROOT(VB) ---------------- VARIABLE
                               |
                             CONJ(VB) ----- POBJ (Can also be DOBJ)
@@ -17,7 +33,7 @@ def recursive_prep_search(verb: Dict, pobj: Dict):
 
     Conjunctive verbs for Subj of sentence, recursively search for nested prepositional phrases,
     if DOBJ one level up is noun and POBJ of PREP at lower level is NNP, establish relation with root subj
-    """
+    '''
     if DPHelper.is_proper_noun(pobj): # Base case
         obj = get_noun_phrase(pobj, proper_noun=True)
         relation = get_noun_phrase(verb)
@@ -81,11 +97,11 @@ def get_temporal(word: Dict) -> str:
         for child in word["children"]:
             if child["link"] == Relations.PUNCTUATION:
                 if not root_added:
-                    full = "".join([full, word["word"]]) if not full else " ".join([full, word["word"]])
+                    full = word_join(full, word)
                     root_added = True
                 full = "".join([full, child["word"]])
             else:
-                full = "".join([full, child["word"]]) if not full else " ".join([full, word["word"]])
+                full = word_join(full, child)
         return full
 
 
@@ -110,10 +126,15 @@ def get_noun_phrase(noun: Dict, proper_noun=False) -> str:
             elif child["link"] == Relations.ADJECTIVAL_MODIFIER and not proper_noun:
                 full = child["word"] # FIXME Assume singular adjectival modifiers for now
             elif child["link"] == Relations.NOUN:
-                full = "".join([full, child["word"]]) if not full else " ".join([full, child["word"]])
+                full = word_join(full, child)
             else:
                 continue
-        return "".join([full, noun["word"]]) if not full else " ".join([full, noun["word"]])
+        return word_join(full, noun)
+
+
+def word_join(full: str, word: str):
+    # Here because of extensive usage
+    return "".join([full, word["word"]]) if not full else " ".join([full, word["word"]])
 
 
 """
@@ -170,6 +191,18 @@ class DPHelper:
                child["link"] == Relations.PREDICATE_OBJECT or \
                child["link"] == Relations.INDIRECT_OBJECT:
                 return child
+
+    @staticmethod
+    def get_prepositional_comp(prep: Dict) -> Dict:
+        for child in prep["children"]:
+            if child["link"] == Relations.PREPOSITIONAL_COMP:
+                return child
+
+    @staticmethod
+    def get_appositional_phrases(prep: Dict) -> Dict:
+        appos: List[Dict] = DPHelper.get_child_type(prep, Relations.APPOSITION)
+        return list(filter(lambda word: not DPHelper.is_proper_noun(word), appos))
+
 
     @staticmethod
     def get_child_type(word: Dict, child_type: Relations) -> List[Dict]:

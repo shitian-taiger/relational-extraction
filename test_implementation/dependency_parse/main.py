@@ -43,7 +43,6 @@ def generate(root: Dict):
         elif DPHelper.is_verb(root):
             print("============= SUBJECT with VERB ROOT (spe.) ===============")
             print("subj(s): %s" % get_all_proper_nouns(subj))
-            relations = [root["word"]]
             objs, aux_relations = vbroot_subj(root)
             relations = relations + aux_relations
             print("objs(s): %s" % objs)
