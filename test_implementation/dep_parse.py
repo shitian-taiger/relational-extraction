@@ -61,10 +61,10 @@ def subjpass(root: Dict):
                        |
     '''
     relations = []
+    obj = [] # Actual Named entity to find
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_objs = DPHelper.get_child_type(prep, Relations.PREDICATE_OBJECT)
         assert(len(pred_objs) == 1) # TODO Similar to above, refactor
-        obj = None # Actual Named entity to find
         pred_obj = pred_objs[0]
 
         if DPHelper.has_possession_by(pred_obj) and \
@@ -73,6 +73,15 @@ def subjpass(root: Dict):
             relations = relations + get_all_nouns(pred_obj)
         else:
             continue
+
+    for tmod in DPHelper.get_child_type(root, Relations.TEMPORAL_MODIFIER): # Temporal modifier directly by root verb
+        relations = relations + [root["word"]]
+        obj = obj + [get_temporal(tmod)]
+
+    for conj in DPHelper.get_child_type(root, Relations.CONJUNCTION):
+        pass
+
+
     return obj, relations
 
 

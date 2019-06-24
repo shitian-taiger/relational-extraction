@@ -151,6 +151,28 @@ def get_all_proper_nouns(noun: Dict) -> List[str]:
     return proper_nouns
 
 
+def get_temporal(word: Dict) -> str:
+    """
+    Given word of temporal nature, get full phrase
+    - Note positional information of root word given punctuation
+    """
+    if not word.get("children"):
+        return word["word"]
+    else:
+        full = ""
+        root_added = False
+        for child in word["children"]:
+            if child["link"] == Relations.PUNCTUATION:
+                if not root_added:
+                    full = "".join([full, word["word"]]) if not full else " ".join([full, word["word"]])
+                    root_added = True
+                full = "".join([full, child["word"]])
+            else:
+                full = "".join([full, child["word"]]) if not full else " ".join([full, word["word"]])
+        return full
+
+
+
 def get_noun_phrase(noun: Dict, proper_noun=False) -> str:
     """
     Given a noun, include all modifier NN to get full noun phrase
