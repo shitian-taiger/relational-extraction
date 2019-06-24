@@ -16,7 +16,7 @@ sentences = [
     "Bojack Horseman resides in Hollywoo, California, and works on Detective X.",
     "Annacone coached Federer to win multiple Wimbledon Championships, and in turn became his best friend.", # TODO Handle verbs with concrete form
     "Harry was born September 4, 1946.",
-    "Harry graduated from Maryville High School, competed his undergraduate work as a Speech and Communication major at Carson Newman College, and got his graduate degree from the University of Tennessee, Knoxville.",
+    "Harry graduated from Maryville High School, completed his undergraduate work as a Speech and Communication major at Carson Newman College, and got his graduate degree from the University of Tennessee, Knoxville.",
     "Harry is married to Mary and has two children.",
     "Harry retired from law enforcement and was a business employer before pursuing politics."
 ]

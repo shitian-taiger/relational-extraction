@@ -9,8 +9,8 @@ class Relations:
     INDIRECT_OBJECT = "iobj"
     NOMINAL_SUBJECT = "nsubj"
     NOUN = "nn" # noun as part of noun object group
-    TEMPORAL_MODIFIER = "tmod"
     OPEN_CLAUSAL_COMPLEMENT = "xcomp"
+    TEMPORAL_MODIFIER = "tmod"
     PASSIVE_NOM_SUBJECT = "nsubjpass"
     POSSESSION_BY = "poss"
     PREPOSITION = "prep"

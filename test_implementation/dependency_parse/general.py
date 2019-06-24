@@ -1,13 +1,43 @@
 from typing import Dict, List
 from .constants import Relations, POS
 
-# ========================================= General Method =================================================
+# ========================================= General Methods =================================================
+
+
+def recursive_prep_search(verb: Dict, pobj: Dict):
+    """
+    VARIABLE ------------- ROOT(VB) ---------------- VARIABLE
+                              |
+                            CONJ(VB) ----- POBJ (Can also be DOBJ)
+                                            |
+                                            PREP ---- POBJ
+                                                        .
+                                                        .
+                                                        .
+
+    Conjunctive verbs for Subj of sentence, recursively search for nested prepositional phrases,
+    if DOBJ one level up is noun and POBJ of PREP at lower level is NNP, establish relation with root subj
+    """
+    if DPHelper.is_proper_noun(pobj): # Base case
+        obj = get_noun_phrase(pobj, proper_noun=True)
+        relation = get_noun_phrase(verb)
+        print("Obj: %s" % [obj], "\nRelation: %s" % [relation])
+    elif DPHelper.is_noun(pobj): # Represents relation between root subj and pobj
+        prep = DPHelper.get_child_type(pobj, Relations.PREPOSITION)
+        if prep:
+            pobj_at_next_level = get_predicate_object(prep[0])
+            recursive_prep_search(pobj, pobj_at_next_level) # pobj at current level now represents possible relation
+    else:
+        return
+
+
 
 def get_predicate_object(prep: Dict) -> Dict:
-    # Gets pobj of prep, assumes only 1 such object
+    # Gets pobj or dobj of prep, assumes only 1 such object
     pred_objs = DPHelper.get_child_type(prep, Relations.PREDICATE_OBJECT)
-    assert(len(pred_objs) == 1) # TODO Similar to above, refactor
-    return pred_objs[0]
+    direct_objs = DPHelper.get_child_type(prep, Relations.DIRECT_OBJECT) # Possibility nonwithstanding
+    assert( (len(pred_objs) + len(direct_objs)) == 1)
+    return pred_objs[0] if pred_objs else direct_objs[0]
 
 
 def get_all_nouns(noun: Dict) -> List[str]:
@@ -17,7 +47,7 @@ def get_all_nouns(noun: Dict) -> List[str]:
     for conj in DPHelper.get_child_type(noun, Relations.CONJUNCTION): # Conjuncting predicate objects are also relations
         nouns.append(get_noun_phrase(conj))
 
-    for appos in DPHelper.get_child_type(noun, Relations.APPOSITION): # Conjuncting predicate objects are also relations
+    for appos in DPHelper.get_child_type(noun, Relations.APPOSITION): # Appositional nouns
         nouns.append(get_noun_phrase(appos))
 
     return nouns
@@ -72,12 +102,15 @@ def get_noun_phrase(noun: Dict, proper_noun=False) -> str:
     else:
         full = ""
         for child in noun["children"]:
-            if not DPHelper.is_leaf(child):
+            if child["link"] == Relations.PREPOSITION and proper_noun: # Special cases such as University of X
+                pobj = get_predicate_object(child)
+                return "{} {} {}".format(noun["word"], child["word"], pobj["word"])
+            elif not DPHelper.is_leaf(child):
                 continue
             elif child["link"] == Relations.ADJECTIVAL_MODIFIER and not proper_noun:
                 full = child["word"] # FIXME Assume singular adjectival modifiers for now
             elif child["link"] == Relations.NOUN:
-                full = " ".join([full, child["word"]])
+                full = "".join([full, child["word"]]) if not full else " ".join([full, child["word"]])
             else:
                 continue
         return "".join([full, noun["word"]]) if not full else " ".join([full, noun["word"]])
@@ -134,6 +167,7 @@ class DPHelper:
     def get_object(root: Dict) -> Dict:
         for child in root["children"]:
             if child["link"] == Relations.DIRECT_OBJECT or \
+               child["link"] == Relations.PREDICATE_OBJECT or \
                child["link"] == Relations.INDIRECT_OBJECT:
                 return child
 

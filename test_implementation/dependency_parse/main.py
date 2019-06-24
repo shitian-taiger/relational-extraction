@@ -19,10 +19,12 @@ def generate(root: Dict):
             print("subj: %s" % subj)
             print("obj: %s " % obj)
 
-    elif subj == None:
-        print("============ Only OBJ present ===============" )
-
     elif obj == None:
+
+        # Check for clausal complement for Subj (INDEPENDENT)
+        if DPHelper.get_child_type(root, Relations.CLAUSAL_COMPLEMENT):
+            pass
+
         # Passive subject, look into preposition for predicate object with possessive
         if DPHelper.is_proper_noun(subj) and subj["link"] == Relations.PASSIVE_NOM_SUBJECT:
             print("============= PASSIVE SUBJECT ===============")
