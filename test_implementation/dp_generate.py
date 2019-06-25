@@ -23,6 +23,11 @@ sentences = [
     "The first six years of Stapledon's and Magaret's life were spent with their parents at Port Tortilla.",
     "Stapledon was educated at Abbotsholme School and Balliol College, Oxford, where he acquired a BA in Modern History in 1909 and a MA in 1913.",
     "After a brief stint as a teacher at Manchester Grammar School, Stapledon worked in shipping offices in Liverpool and Port Tortilla from 1910 to 1913.",
+    "Dmitry was born in Moscow.",
+    "In 1993 Dmitry graduated from Russian Academy of Theatre Arts as stage director.",
+    "Dmitry started his career in the Russian Drama Theatre of Lithuania in Vilnius.",
+    "Then Dmitry directed opera and drama in many major Russian cities: Moscow, Saint Petersburg, Novosibirsk, Omsk, Samara, Kazan and others.",
+    "Dmitry usually creates scenic design and stage clothes for his plays."
 ]
 
 for sentence in sentences:

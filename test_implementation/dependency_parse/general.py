@@ -37,6 +37,7 @@ def recursive_prep_search(verb: Dict, pobj: Dict):
     if DPHelper.is_proper_noun(pobj): # Base case
         obj = get_noun_phrase(pobj, proper_noun=True)
         relation = get_noun_phrase(verb)
+        print("++++++++++++ Recursive Prepositional Search +++++++++++++")
         print("Obj: %s" % [obj], "\nRelation: %s" % [relation])
     elif DPHelper.is_noun(pobj): # Represents relation between root subj and pobj
         prep = DPHelper.get_child_type(pobj, Relations.PREPOSITION)
@@ -45,6 +46,24 @@ def recursive_prep_search(verb: Dict, pobj: Dict):
             recursive_prep_search(pobj, pobj_at_next_level) # pobj at current level now represents possible relation
     else:
         return
+
+
+def get_nested_in_pobjs(pobj: Dict) -> List[str]:
+    '''
+    PREP ---------------- POBJ
+                            |
+                         PREP(IN)
+
+    The `in` preposition is a frequent enough appositional relation to warrant this
+    '''
+    subjs = []
+    if DPHelper.is_proper_noun(pobj):
+        subjs = subjs + get_all_nouns(pobj, proper_noun=True)
+    in_preps = list(filter(lambda prep: prep["word"] == "in", DPHelper.get_child_type(pobj, Relations.PREPOSITION)))
+    for in_prep in in_preps:
+        nested_pobj = get_predicate_object(in_prep)
+        subjs = subjs + get_nested_in_pobjs(nested_pobj)
+    return subjs
 
 
 
@@ -66,6 +85,9 @@ def get_all_nouns(noun: Dict, proper_noun=False) -> List[str]:
     for appos in DPHelper.get_child_type(noun, Relations.APPOSITION): # Appositional nouns
         nouns.append(get_noun_phrase(appos, proper_noun))
 
+    for noun_child in list(filter(lambda noun: not DPHelper.is_leaf(noun),
+                                  DPHelper.get_child_type(noun, Relations.NOUN))): # Conjuncting nouns with `and` linked with NN
+        nouns.append(get_noun_phrase(noun_child, proper_noun))
     return nouns
 
 

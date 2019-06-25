@@ -110,6 +110,29 @@ def nnroot_subj(root: Dict):
     return objs, relations
 
 
+def vbroot_subj_xobj(root: Dict):
+    '''
+    Direct object present with verb root, presume dobj represents relation
+    - Most relevant to cases with basic prepositions such `in / from etc.`
+
+    NSUBJ(NNP) ------- ROOT(VB) ---------- DOBJ(NN)
+                     |
+    '''
+    relations = get_all_nouns(DPHelper.get_object(root))
+    objs = []
+    for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
+        pred_obj = get_predicate_object(prep)
+        if prep["word"] == "in": # We handle this separately due to possibility of nested `in`s
+            objs = objs + get_nested_in_pobjs(pred_obj)
+        elif DPHelper.is_proper_noun(pred_obj):
+            objs = objs + [get_noun_phrase(pred_obj)]
+
+    if objs:
+        return objs, relations
+    else:
+        return [], []
+
+
 def vbroot_subj(root: Dict):
     '''
     Non passive subject and verb root but still valid relation
@@ -120,6 +143,10 @@ def vbroot_subj(root: Dict):
     objs, aux_relations = [], []
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
+
+        if prep["word"].istitle(): # We assume this phrase came before subject, nonetheless referring to root subject FIXME Hacky, please verify
+            recursive_prep_search(root, pred_obj) # FIXME This usage technically doesn't conform to function definition
+
         if DPHelper.is_proper_noun(pred_obj):
             aux_relations = aux_relations + [get_noun_phrase(root)]
             objs = objs + get_all_nouns(pred_obj, proper_noun=True)
@@ -146,9 +173,9 @@ def vbroot_subj(root: Dict):
                     objs = objs + get_all_nouns(conj_prep_obj, proper_noun=True)
                     aux_relations = aux_relations + [conj["word"]]
 
-        # TODO We assume for now that this case is mutually exclusive with first
+        # FIXME We assume for now that this case is mutually exclusive with first
         if not conj_prep:
-            recursive_prep_search(root, conj_obj) # TODO This usage technically doesn't conform to function definition
+            recursive_prep_search(root, conj_obj) # FIXME (As above) This usage technically doesn't conform to function definition
 
     return objs, aux_relations
 
