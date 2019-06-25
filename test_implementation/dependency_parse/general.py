@@ -48,8 +48,8 @@ def recursive_prep_search(verb: Dict, pobj: Dict):
 
 
 
-def get_predicate_object(prep: Dict) -> Dict:
-    # Gets pobj or dobj of prep, assumes only 1 such object
+def get_predicate_object(prep: Dict, assertion=True) -> Dict:
+    # Gets pobj or dobj of prep, assumes only 1 such object (Special cases do exist, in which case not using this for now)
     pred_objs = DPHelper.get_child_type(prep, Relations.PREDICATE_OBJECT)
     direct_objs = DPHelper.get_child_type(prep, Relations.DIRECT_OBJECT) # Possibility nonwithstanding
     assert( (len(pred_objs) + len(direct_objs)) == 1)
@@ -167,7 +167,7 @@ class DPHelper:
         return word["attributes"][0] in verb_forms
 
     @staticmethod
-    def has_possession_by(word: Dict) -> bool:
+    def has_possessor(word: Dict) -> bool:
         return len(DPHelper.get_child_type(word, Relations.POSSESSION_BY)) > 0
 
     @staticmethod

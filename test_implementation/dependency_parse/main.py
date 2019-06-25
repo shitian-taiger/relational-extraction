@@ -12,14 +12,30 @@ def generate(root: Dict):
     obj = DPHelper.get_object(root)
     relations = []
 
-    if subj == None and obj == None:
-        print("============== NOUN ROOT - No SUBJ and OBJ ================")
-        if DPHelper.is_proper_noun(root):
-            subj, relations, obj = nnproot(root)
-            print("subj: %s" % subj)
-            print("obj: %s " % obj)
+    if subj is not None and DPHelper.is_proper_noun(subj) and \
+       obj is not None and DPHelper.is_proper_noun(obj):
 
-    elif obj == None:
+        # Simplest case: NE subject and object
+        if DPHelper.is_proper_noun(subj) and DPHelper.is_proper_noun(obj):
+            print("============ Rooted SUBJECT and OBJECT =============")
+            print("subj(s): %s" % get_all_proper_nouns(subj))
+            print("obj: %s" % obj["word"])
+            relations = sub_obj_vbroot(root) # Relations between subject and object
+            print("relations %s" % relations)
+
+            # Relations within clausal complements
+            open_comp: List[Dict] = DPHelper.get_child_type(root, Relations.OPEN_CLAUSAL_COMPLEMENT)
+            comp: List[Dict] = DPHelper.get_child_type(root, Relations.CLAUSAL_COMPLEMENT)
+            if open_comp: # Assume for now open_comps all relate to object
+                print("+++++++++++++++++ Open Clausal Complement +++++++++++++++++")
+                print("subj: %s" % obj["word"])
+                objs, xcomp_relations = x_comp(open_comp[0]) # TODO Can there be multiple xcomps?
+                print("objs: %s" % objs)
+                print("xcomp_relations %s" % xcomp_relations)
+
+            return
+
+    elif subj is not None and DPHelper.is_proper_noun(subj):
 
         # Check for clausal complement for Subj (INDEPENDENT)
         if DPHelper.get_child_type(root, Relations.CLAUSAL_COMPLEMENT):
@@ -48,24 +64,18 @@ def generate(root: Dict):
             print("objs(s): %s" % objs)
 
     else:
-        # Simplest case: NE subject and object
-        if DPHelper.is_proper_noun(subj) and DPHelper.is_proper_noun(obj):
-            print("============ Rooted SUBJECT and OBJECT =============")
-            print("subj(s): %s" % get_all_proper_nouns(subj))
-            print("obj: %s" % obj["word"])
-            relations = sub_obj_vbroot(root) # Relations between subject and object
-            print("relations %s" % relations)
+        print("============== NOUN ROOT - No Direct SUBJ and OBJ ================")
 
-            # Relations within clausal complements
-            open_comp: List[Dict] = DPHelper.get_child_type(root, Relations.OPEN_CLAUSAL_COMPLEMENT)
-            comp: List[Dict] = DPHelper.get_child_type(root, Relations.CLAUSAL_COMPLEMENT)
-            if open_comp: # Assume for now open_comps all relate to object
-                print("================= Open Clausal Complement =================")
-                print("subj: %s" % obj["word"])
-                objs, xcomp_relations = x_comp(open_comp[0]) # TODO Can there be multiple xcomps?
-                print("objs: %s" % objs)
-                print("xcomp_relations %s" % xcomp_relations)
+        if subj is not None: # Mostly likely noun with possessive or nested
+            print("============= NESTED POSSESSIVE OF PASSIVE SUBJECT ===============")
+            assert(subj["link"] == Relations.PASSIVE_NOM_SUBJECT) # Necessarily assume this since noun subj is possessive
+            subjs = subjpass_poss(subj)
+            print("subj(s): %s" % subjs)
 
-            return
+
+        if DPHelper.is_proper_noun(root):
+            subj, relations, obj = nnproot(root)
+            print("subj: %s" % subj)
+            print("obj: %s " % obj)
 
     print("relation(s): %s" % relations)

@@ -67,7 +67,7 @@ def subjpass(root: Dict):
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
 
-        if DPHelper.has_possession_by(pred_obj) and \
+        if DPHelper.has_possessor(pred_obj) and \
            DPHelper.is_proper_noun(DPHelper.get_possessor(pred_obj)): # Possessive should be named entity
             obj = DPHelper.get_possessor(pred_obj)["word"]
             relations = relations + get_all_nouns(pred_obj)
@@ -121,7 +121,7 @@ def vbroot_subj(root: Dict):
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
         if DPHelper.is_proper_noun(pred_obj):
-            aux_relations = aux_relations + [root["word"]]
+            aux_relations = aux_relations + [get_noun_phrase(root)]
             objs = objs + get_all_proper_nouns(pred_obj)
 
     for conj in DPHelper.get_child_type(root, Relations.CONJUNCTION):
@@ -155,10 +155,10 @@ def vbroot_subj(root: Dict):
 
 def nnproot(root: Dict):
     '''
-    Root proper noun is passive subject, attempt finding active obj in predicate object of preposition
-
     NONE ------ ROOT ----- NONE
                  |
+
+    Root proper noun is passive subject, attempt finding active obj in predicate object of preposition
     '''
     relations = []
     subj = root["word"]
@@ -171,4 +171,22 @@ def nnproot(root: Dict):
             continue
     return subj, relations, obj
 
+
+def subjpass_poss(subjpass: Dict):
+    '''
+    NSUBJPASS(NN) ---------- ROOT
+         |
+
+    Consider cases where there is direct possessor or nested possessor in prepositional object
+    '''
+    subjs = []
+    if DPHelper.has_possessor(subjpass):
+        return DPHelper.get_child_type(subjpass, Relations.POSSESSION_BY)
+    else: # Find subjects in predicate objects
+        for prep in DPHelper.get_child_type(subjpass, Relations.PREPOSITION):
+            pred_objs = DPHelper.get_child_type(prep, Relations.PREDICATE_OBJECT)
+            subjs_raw : List[Dict] = list(map(lambda pred_obj: pred_obj if DPHelper.is_proper_noun(pred_obj) else \
+                                              DPHelper.get_possessor(pred_obj), pred_objs))
+            subjs = subjs + list(map(lambda nnp: get_noun_phrase(nnp, proper_noun=True), subjs_raw))
+        return subjs
 
