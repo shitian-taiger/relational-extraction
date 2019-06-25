@@ -18,7 +18,7 @@ def generate(root: Dict):
         # Simplest case: NE subject and object
         if DPHelper.is_proper_noun(subj) and DPHelper.is_proper_noun(obj):
             print("============ Rooted SUBJECT and OBJECT =============")
-            print("subj(s): %s" % get_all_proper_nouns(subj))
+            print("subj(s): %s" % get_all_nouns(subj))
             print("obj: %s" % obj["word"])
             relations = sub_obj_vbroot(root) # Relations between subject and object
             print("relations %s" % relations)
@@ -44,21 +44,21 @@ def generate(root: Dict):
         # Passive subject, look into preposition for predicate object with possessive
         if DPHelper.is_proper_noun(subj) and subj["link"] == Relations.PASSIVE_NOM_SUBJECT:
             print("============= PASSIVE SUBJECT ===============")
-            print("subj(s): %s" % get_all_proper_nouns(subj))
+            print("subj(s): %s" % get_all_nouns(subj, proper_noun=True))
             obj, relations = subjpass(root)
             print("obj: %s " % obj)
 
         # Possible case where root is noun and hence subject is not labeled passive but relation still exists
         elif DPHelper.is_noun(root):
             print("============= SUBJECT with NOUN ROOT ===============")
-            print("subj(s): %s" % get_all_proper_nouns(subj))
+            print("subj(s): %s" % get_all_nouns(subj, proper_noun=True))
             obj, relations = nnroot_subj(root)
             print("obj: %s " % obj)
 
         # Special cases, root verb without concrete noun form but valid relation (E.g. lives, resides) TODO Do we require `in` for prep?
         elif DPHelper.is_verb(root):
             print("============= SUBJECT with VERB ROOT (spe.) ===============")
-            print("subj(s): %s" % get_all_proper_nouns(subj))
+            print("subj(s): %s" % get_all_nouns(subj, proper_noun=True))
             objs, aux_relations = vbroot_subj(root)
             relations = relations + aux_relations
             print("objs(s): %s" % objs)

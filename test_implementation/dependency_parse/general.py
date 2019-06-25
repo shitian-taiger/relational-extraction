@@ -16,7 +16,7 @@ def appositional_relations(appos: Dict):
         pred_obj = get_predicate_object(prep)
         if DPHelper.is_proper_noun(pred_obj):
             relations = relations + [get_noun_phrase(appos)]
-            objs = get_all_proper_nouns(pred_obj)
+            objs = get_all_nouns(pred_obj, proper_noun=True)
     return objs, relations
 
 
@@ -56,32 +56,17 @@ def get_predicate_object(prep: Dict, assertion=True) -> Dict:
     return pred_objs[0] if pred_objs else direct_objs[0]
 
 
-def get_all_nouns(noun: Dict) -> List[str]:
+def get_all_nouns(noun: Dict, proper_noun=False) -> List[str]:
     # Finds all noun phrases with given word as root, also look for conjunctions
     nouns = []
-    nouns.append(get_noun_phrase(noun))
+    nouns.append(get_noun_phrase(noun, proper_noun))
     for conj in DPHelper.get_child_type(noun, Relations.CONJUNCTION): # Conjuncting predicate objects are also relations
-        nouns.append(get_noun_phrase(conj))
+        nouns.append(get_noun_phrase(conj, proper_noun))
 
     for appos in DPHelper.get_child_type(noun, Relations.APPOSITION): # Appositional nouns
-        nouns.append(get_noun_phrase(appos))
+        nouns.append(get_noun_phrase(appos, proper_noun))
 
     return nouns
-
-
-def get_all_proper_nouns(noun: Dict) -> List[str]:
-    # Finds all proper noun phrases with given word as root, also look for conjunctions
-    proper_nouns = []
-    proper_nouns.append(get_noun_phrase(noun, True)) # Assume root noun is proper noun
-    for conj in DPHelper.get_child_type(noun, Relations.CONJUNCTION): # Conjuncting predicate objects are also relations
-        if DPHelper.is_proper_noun(conj):
-            proper_nouns.append(get_noun_phrase(conj, True))
-
-    for appos in DPHelper.get_child_type(noun, Relations.APPOSITION): # Conjuncting predicate objects are also relations
-        if DPHelper.is_proper_noun(appos):
-            proper_nouns.append(get_noun_phrase(appos, True))
-
-    return proper_nouns
 
 
 def get_temporal(word: Dict) -> str:
@@ -121,7 +106,7 @@ def get_noun_phrase(noun: Dict, proper_noun=False) -> str:
             if child["link"] == Relations.PREPOSITION and proper_noun: # Special cases such as University of X
                 pobj = get_predicate_object(child)
                 return "{} {} {}".format(noun["word"], child["word"], pobj["word"])
-            elif not DPHelper.is_leaf(child):
+            elif not DPHelper.is_leaf(child): # Works to remove concatenation of conjunctive nouns
                 continue
             elif child["link"] == Relations.ADJECTIVAL_MODIFIER and not proper_noun:
                 full = child["word"] # FIXME Assume singular adjectival modifiers for now

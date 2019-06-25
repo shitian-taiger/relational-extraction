@@ -47,7 +47,7 @@ def x_comp(open_comp: Dict):
     else: # Verb case
         relations = relations + [open_comp["word"]]
         dir_obj = DPHelper.get_child_type(open_comp, Relations.DIRECT_OBJECT)[0]
-        objs = objs + get_all_proper_nouns(dir_obj)
+        objs = objs + get_all_nouns(dir_obj, proper_noun=True)
 
     return objs, relations
 
@@ -73,7 +73,7 @@ def subjpass(root: Dict):
             relations = relations + get_all_nouns(pred_obj)
 
         elif DPHelper.is_proper_noun(pred_obj):
-            obj = obj + get_all_proper_nouns(pred_obj)
+            obj = obj + get_all_nouns(pred_obj, proper_noun=True)
             root_relations = True
             for appos in DPHelper.get_appositional_phrases(pred_obj):
                 # Getting all proper nouns takes care of appositional nouns, deal with appos phrases (non NNP appos) here
@@ -104,7 +104,7 @@ def nnroot_subj(root: Dict):
         objs: List[Dict] = [] # Actual Named entity to find
 
         if DPHelper.is_proper_noun(pred_obj):
-            objs = objs + get_all_proper_nouns(pred_obj) # Possibility of multiple conjuncting proper
+            objs = objs + get_all_nouns(pred_obj, proper_noun=True) # Possibility of multiple conjuncting proper
         else:
             continue
     return objs, relations
@@ -122,7 +122,7 @@ def vbroot_subj(root: Dict):
         pred_obj = get_predicate_object(prep)
         if DPHelper.is_proper_noun(pred_obj):
             aux_relations = aux_relations + [get_noun_phrase(root)]
-            objs = objs + get_all_proper_nouns(pred_obj)
+            objs = objs + get_all_nouns(pred_obj, proper_noun=True)
 
     for conj in DPHelper.get_child_type(root, Relations.CONJUNCTION):
         conj_prep: List[Dict] = DPHelper.get_child_type(conj, Relations.PREPOSITION)
@@ -130,7 +130,7 @@ def vbroot_subj(root: Dict):
 
         if conj_prep and conj_obj: # Conjunction object represents relation to object of conj_preposition
             conj_prep_obj = get_predicate_object(conj_prep[0])
-            nnp_prep_obj = get_all_proper_nouns(conj_prep_obj)
+            nnp_prep_obj = get_all_nouns(conj_prep_obj, proper_noun=True)
             if nnp_prep_obj: # Relation only valid
                 objs = objs + nnp_prep_obj
                 aux_relations = aux_relations + [get_noun_phrase(conj_obj)]
@@ -143,7 +143,7 @@ def vbroot_subj(root: Dict):
             else:
                 conj_prep_obj = get_predicate_object(conj_prep[0])
                 if DPHelper.is_proper_noun(conj_prep_obj):
-                    objs = objs + get_all_proper_nouns(conj_prep_obj)
+                    objs = objs + get_all_nouns(conj_prep_obj, proper_noun=True)
                     aux_relations = aux_relations + [conj["word"]]
 
         # TODO We assume for now that this case is mutually exclusive with first
