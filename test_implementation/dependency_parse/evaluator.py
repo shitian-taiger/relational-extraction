@@ -34,8 +34,8 @@ def x_comp(open_comp: Dict):
     if DPHelper.is_noun(open_comp):
         return [], []
     else: # Verb case
-        relations = relations + [open_comp["word"]]
-        dir_obj = DPHelper.get_child_type(open_comp, Relations.DIRECT_OBJECT)[0]
+        relations = relations + [get_noun_phrase(open_comp)]
+        dir_obj = get_predicate_object(open_comp)
         objs = objs + get_all_nouns(dir_obj, proper_noun=True)
 
     return objs, relations
@@ -56,7 +56,7 @@ def subjpass(root: Dict):
 
         if DPHelper.has_possessor(pred_obj) and \
            DPHelper.is_proper_noun(DPHelper.get_possessor(pred_obj)): # Possessive should be named entity
-            objs = objs + [DPHelper.get_possessor(pred_obj)["word"]]
+            objs = objs + [get_noun_phrase(DPHelper.get_possessor(pred_obj), proper_noun=True)]
             relations = relations + get_all_nouns(pred_obj)
 
         elif DPHelper.is_proper_noun(pred_obj):
@@ -68,10 +68,10 @@ def subjpass(root: Dict):
                 appos_rels.append({"relation": appos_relations, "obj": appos_objs})
         else:
             continue
-    relations = relations + [root["word"]] if root_relations else relations
+    relations = relations + [get_noun_phrase(root)] if root_relations else relations
 
     for tmod in DPHelper.get_child_type(root, Relations.TEMPORAL_MODIFIER): # Temporal modifier directly by root verb
-        relations = relations + [root["word"]]
+        relations = relations + [get_noun_phrase(root)]
         objs = objs + [get_temporal(tmod)]
 
     return objs, relations, appos_rels
@@ -132,7 +132,10 @@ def vbroot_subj(root: Dict):
         pred_obj = get_predicate_object(prep)
 
         if prep["word"].istitle(): # We assume this phrase came before subject, nonetheless referring to root subject FIXME Hacky, please verify
-            recursive_prep_search(pred_obj)
+            nested_prep_relation = recursive_prep_search(pred_obj)
+            if nested_prep_relation:
+                aux_relations.append([nested_prep_relation["relation"]])
+                objs.append([nested_prep_relation["obj"]])
 
         if DPHelper.is_proper_noun(pred_obj):
             aux_relations.append([get_noun_phrase(root)])
@@ -155,8 +158,8 @@ def vbroot_subj(root: Dict):
                 aux_relations.append([get_noun_phrase(conj_obj)])
 
         elif conj_prep: # Assume here non nested prepositions in conjunction
-            prep_comp = DPHelper.get_prepositional_comp(conj_prep[0])
-            if prep_comp: # Prepositional Complement
+            conj_prep_comp = DPHelper.get_prepositional_comp(conj_prep[0])
+            if conj_prep_comp: # Prepositional Complement
                 # TODO Do we ignore this considering prepositional complements usually don't contain concrete relations
                 continue
             else:
@@ -183,11 +186,11 @@ def nnproot(root: Dict):
     Root proper noun is passive subject, attempt finding active obj in predicate object of preposition
     '''
     relations = []
-    subj = root["word"]
+    subj = get_noun_phrase(root, proper_noun=True)
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
         if DPHelper.is_noun(pred_obj):
-            obj = DPHelper.get_possessor(pred_obj)["word"]
+            obj = get_noun_phrase(DPHelper.get_possessor(pred_obj), proper_noun=True)
             relations = relations + [get_noun_phrase(pred_obj)]
         else:
             continue
