@@ -31,7 +31,7 @@ class TestBasic(unittest.TestCase):
             ("Federer hired Annacone as his coach and business partner and as a best friend.",
              eval("[{'subjs': ['Federer'], 'relation': 'coach', 'objs': ['Annacone']}, {'subjs': ['Federer'], 'relation': 'business partner', 'objs': ['Annacone']}, {'subjs': ['Federer'], 'relation': 'best friend', 'objs': ['Annacone']}]")),
             ("Dmitry started his career in the Russian Drama Theatre of Lithuania in Vilnius.",
-             eval("[{'subjs': ['Dmitry'], 'relation': 'career', 'objs': ['Theatre of Lithuania', 'Vilnius']}]")),
+             eval("[{'subjs': ['Dmitry'], 'relation': 'career', 'objs': ['Drama Theatre of Lithuania', 'Vilnius']}]")),
             ("Then Dmitry directed opera and drama in many major Russian cities: Moscow, Saint Petersburg, Novosibirsk, Omsk, Samara, Kazan and others.",
              eval("[{'subjs': ['Dmitry'], 'relation': 'opera', 'objs': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Omsk', 'Samara', 'Kazan']}, {'subjs': ['Dmitry'], 'relation': 'drama', 'objs': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Omsk', 'Samara', 'Kazan']}]")),
             ]
@@ -63,7 +63,7 @@ class TestBasic(unittest.TestCase):
             ("Annacone was hired as Federer's coach.",
              eval("[{'subjs': ['Annacone'], 'relation': 'coach', 'objs': ['Federer']}]")),
             ("Stapledon was born in Seacombe, Wallasey, on the Wirral Peninsula near Liverpool, the only son of William Clibbert Stapledon and Emmeline Miller.",
-             eval("[{'subjs': ['Stapledon'], 'relation': 'only son', 'objs': ['William Clibbert Stapledon', 'Emmeline Miller']}, {'subjs': ['Stapledon'], 'relation': 'born', 'objs': ['Seacombe', 'Wallasey', 'Peninsula near Liverpool']}]")),
+             eval("[{'subjs': ['Stapledon'], 'relation': 'only son', 'objs': ['William Clibbert Stapledon', 'Emmeline Miller']}, {'subjs': ['Stapledon'], 'relation': 'born', 'objs': ['Seacombe', 'Wallasey', 'Wirral Peninsula']}]")),
             ("Stapledon was educated at Abbotsholme School and Balliol College, Oxford, where he acquired a BA in Modern History in 1909 and a MA in 1913.",
              eval("[{'subjs': ['Stapledon'], 'relation': 'educated', 'objs': ['Abbotsholme School', 'Balliol College']}]")),
             ("Dmitry was born in Moscow.",

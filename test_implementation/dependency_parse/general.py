@@ -137,9 +137,10 @@ def get_noun_phrase(noun: Dict, proper_noun=False) -> str:
     else:
         full = ""
         for child in noun["children"]:
-            if child["link"] == Relations.PREPOSITION and proper_noun: # Special cases such as University of X
+            if DPHelper.is_nnp_prep_link(child) and proper_noun: # Special cases such as University of X
                 pobj = get_predicate_object(child)
-                return "{} {} {}".format(noun["word"], child["word"], pobj["word"])
+                prepositionally_linked_NNP = "{} {} {}".format(noun["word"], child["word"], pobj["word"])
+                return (full + " " + prepositionally_linked_NNP) if full else prepositionally_linked_NNP
             elif not DPHelper.is_leaf(child): # Works to remove concatenation of conjunctive nouns
                 continue
             elif child["link"] == Relations.ADJECTIVAL_MODIFIER and not proper_noun:
@@ -205,6 +206,10 @@ class DPHelper:
             POS.VERB_NON_3SP
             ]
         return word["attributes"][0] in verb_forms
+
+    @staticmethod
+    def is_nnp_prep_link(word: Dict):
+        return word["link"] == Relations.PREPOSITION and word["word"] == "of"
 
     @staticmethod
     def has_possessor(word: Dict) -> bool:
