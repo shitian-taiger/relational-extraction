@@ -132,7 +132,7 @@ def vbroot_subj(root: Dict):
         pred_obj = get_predicate_object(prep)
 
         if prep["word"].istitle(): # We assume this phrase came before subject, nonetheless referring to root subject FIXME Hacky, please verify
-            recursive_prep_search(root, pred_obj) # FIXME This usage technically doesn't conform to function definition
+            recursive_prep_search(pred_obj)
 
         if DPHelper.is_proper_noun(pred_obj):
             aux_relations.append([get_noun_phrase(root)])
@@ -140,7 +140,7 @@ def vbroot_subj(root: Dict):
         elif DPHelper.get_prepositional_comp(prep): # Prepositional complement (pred_obj handles returning of pcomp)
             for nested_prep in DPHelper.get_child_type(pred_obj, Relations.PREPOSITION):
                 nested_pred_pobj = get_predicate_object(nested_prep)
-                nested_prep_relation = recursive_prep_search(pred_obj, nested_pred_pobj)
+                nested_prep_relation = recursive_prep_search(pred_obj)
                 if nested_prep_relation:
                     aux_relations.append([nested_prep_relation["relation"]])
                     objs.append([nested_prep_relation["obj"]])
@@ -169,9 +169,10 @@ def vbroot_subj(root: Dict):
 
         # FIXME We assume for now that this case is mutually exclusive with first
         if not conj_prep:
-            nested_prep_relation = recursive_prep_search(root, conj_obj) # FIXME (As above) This usage technically doesn't conform to function definition
-            aux_relations.append([nested_prep_relation["relation"]])
-            objs.append([nested_prep_relation["obj"]])
+            nested_prep_relation = recursive_prep_search(conj_obj)
+            if nested_prep_relation:
+                aux_relations.append([nested_prep_relation["relation"]])
+                objs.append([nested_prep_relation["obj"]])
 
     return objs, aux_relations
 

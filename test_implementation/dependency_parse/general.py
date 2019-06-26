@@ -20,7 +20,7 @@ def appositional_relations(appos: Dict):
     return objs, relations
 
 
-def recursive_prep_search(verb: Dict, pobj: Dict) -> Dict:
+def recursive_prep_search(pobj: Dict) -> Dict:
     '''
     VARIABLE ------------- ROOT(VB) ---------------- VARIABLE
                               |
@@ -34,17 +34,27 @@ def recursive_prep_search(verb: Dict, pobj: Dict) -> Dict:
     Conjunctive verbs for Subj of sentence, recursively search for nested prepositional phrases,
     if DOBJ one level up is noun and POBJ of PREP at lower level is NNP, establish relation with root subj
     '''
-    if DPHelper.is_proper_noun(pobj): # Base case
-        obj = get_noun_phrase(pobj, proper_noun=True)
-        relation = get_noun_phrase(verb)
-        return {"relation": relation, "obj": obj}
-    elif DPHelper.is_noun(pobj): # Represents relation between root subj and pobj
-        prep = DPHelper.get_child_type(pobj, Relations.PREPOSITION)
-        if prep:
-            pobj_at_next_level = get_predicate_object(prep[0])
-            return recursive_prep_search(pobj, pobj_at_next_level) # pobj at current level now represents possible relation
+
+    prep = DPHelper.get_child_type(pobj, Relations.PREPOSITION)
+    if prep:
+        new_pobj = get_predicate_object(prep[0])
     else:
         return {}
+
+    def helper(prev_pobj: Dict, pobj: Dict):
+        if DPHelper.is_proper_noun(pobj): # Base case
+            obj = get_noun_phrase(pobj, proper_noun=True)
+            relation = get_noun_phrase(prev_pobj)
+            return {"relation": relation, "obj": obj}
+        elif DPHelper.is_noun(pobj): # Represents relation between root subj and pobj
+            prep = DPHelper.get_child_type(pobj, Relations.PREPOSITION)
+            if prep:
+                pobj_at_next_level = get_predicate_object(prep[0])
+                return helper(pobj, pobj_at_next_level) # pobj at current level now represents possible relation
+        else:
+            return {}
+
+    return helper(pobj, new_pobj)
 
 
 def get_nested_in_pobjs(pobj: Dict) -> List[str]:
@@ -199,6 +209,10 @@ class DPHelper:
     @staticmethod
     def has_possessor(word: Dict) -> bool:
         return len(DPHelper.get_child_type(word, Relations.POSSESSION_BY)) > 0
+
+    @staticmethod
+    def has_rc_modifier(word: Dict) -> bool:
+        return len(DPHelper.get_child_type(word, Relations.RELATIVE_CLAUSE_MODIFIER)) > 0
 
     @staticmethod
     def get_possessor(word: Dict) -> bool:
