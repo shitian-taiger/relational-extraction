@@ -81,8 +81,9 @@ def generate(root: Dict):
 
         if subj is not None: # Mostly likely noun with possessive or nested
             logging.log(INFO, "============= NESTED POSSESSIVE OF PASSIVE SUBJECT ===============")
-            assert(subj["link"] == Relations.PASSIVE_NOM_SUBJECT) # Necessarily assume this since noun subj is possessive
-            subjs = subjpass_poss(subj)
+            if (subj["link"] == Relations.PASSIVE_NOM_SUBJECT): # Necessarily assume this since noun subj is possessive, else should Corefer
+                subjs = subjpass_poss(subj)
+
 
         if DPHelper.is_proper_noun(root):
             subj, relations, obj = nnproot(root)

@@ -89,8 +89,9 @@ def get_predicate_object(prep: Dict, assertion=True) -> Dict:
     # Gets pobj or dobj of prep, assumes only 1 such object (Special cases do exist, in which case not using this for now)
     pred_objs = DPHelper.get_child_type(prep, Relations.PREDICATE_OBJECT)
     direct_objs = DPHelper.get_child_type(prep, Relations.DIRECT_OBJECT) # Possibility nonwithstanding
-    assert( (len(pred_objs) + len(direct_objs)) == 1)
-    return pred_objs[0] if pred_objs else direct_objs[0]
+    prep_comp = DPHelper.get_child_type(prep, Relations.PREPOSITIONAL_COMP)
+    assert( (len(pred_objs) + len(direct_objs) + len(prep_comp) == 1) )
+    return pred_objs[0] if pred_objs else direct_objs[0] if direct_objs else prep_comp[0]
 
 
 def get_all_nouns(noun: Dict, proper_noun=False) -> List[str]:

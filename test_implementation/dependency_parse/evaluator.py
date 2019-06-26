@@ -137,6 +137,13 @@ def vbroot_subj(root: Dict):
         if DPHelper.is_proper_noun(pred_obj):
             aux_relations.append([get_noun_phrase(root)])
             objs.append(get_all_nouns(pred_obj, proper_noun=True))
+        elif DPHelper.get_prepositional_comp(prep): # Prepositional complement (pred_obj handles returning of pcomp)
+            for nested_prep in DPHelper.get_child_type(pred_obj, Relations.PREPOSITION):
+                nested_pred_pobj = get_predicate_object(nested_prep)
+                nested_prep_relation = recursive_prep_search(pred_obj, nested_pred_pobj)
+                if nested_prep_relation:
+                    aux_relations.append([nested_prep_relation["relation"]])
+                    objs.append([nested_prep_relation["obj"]])
 
     for conj in DPHelper.get_child_type(root, Relations.CONJUNCTION):
         conj_prep: List[Dict] = DPHelper.get_child_type(conj, Relations.PREPOSITION)
