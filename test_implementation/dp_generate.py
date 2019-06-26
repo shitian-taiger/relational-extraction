@@ -1,12 +1,10 @@
+import unittest
 from allen_models import DepParse
 from dependency_parse.main import generate
-
-
-
-
-dep_parse = DepParse()
+import dependency_parse.tests
 
 sentences = [
+    "Sarah Palin is a friend of Trump",
     "Yoda and ObiWan were the mentors of Skywalker.",
     "Contaldo was a good friend of Jose Calderon",
     "Federer hired Annacone as his coach.",
@@ -30,8 +28,16 @@ sentences = [
     "Dmitry usually creates scenic design and stage clothes for his plays."
 ]
 
-for sentence in sentences:
-    root = dep_parse.get_tree(sentence)
-    print("\n%s" % sentence)
-    generate(root)
+
+if __name__ == "__main__":
+
+    # dep_parse = DepParse()
+    # for sentence in sentences:
+    #     root = dep_parse.get_tree(sentence)
+    #     print("\n%s" % sentence)
+    #     generate(root)
+
+    suite = unittest.TestLoader().loadTestsFromModule(dependency_parse.tests)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+
 
