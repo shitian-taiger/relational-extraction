@@ -20,7 +20,7 @@ def appositional_relations(appos: Dict):
     return objs, relations
 
 
-def recursive_prep_search(verb: Dict, pobj: Dict):
+def recursive_prep_search(verb: Dict, pobj: Dict) -> Dict:
     '''
     VARIABLE ------------- ROOT(VB) ---------------- VARIABLE
                               |
@@ -37,15 +37,14 @@ def recursive_prep_search(verb: Dict, pobj: Dict):
     if DPHelper.is_proper_noun(pobj): # Base case
         obj = get_noun_phrase(pobj, proper_noun=True)
         relation = get_noun_phrase(verb)
-        print("++++++++++++ Recursive Prepositional Search +++++++++++++")
-        print("Obj: %s" % [obj], "\nRelation: %s" % [relation])
+        return {"relation": relation, "obj": obj}
     elif DPHelper.is_noun(pobj): # Represents relation between root subj and pobj
         prep = DPHelper.get_child_type(pobj, Relations.PREPOSITION)
         if prep:
             pobj_at_next_level = get_predicate_object(prep[0])
-            recursive_prep_search(pobj, pobj_at_next_level) # pobj at current level now represents possible relation
+            return recursive_prep_search(pobj, pobj_at_next_level) # pobj at current level now represents possible relation
     else:
-        return
+        return {}
 
 
 def get_nested_in_pobjs(pobj: Dict) -> List[str]:
@@ -83,33 +82,14 @@ def get_all_nouns(noun: Dict, proper_noun=False) -> List[str]:
         nouns.append(get_noun_phrase(conj, proper_noun))
 
     for appos in DPHelper.get_child_type(noun, Relations.APPOSITION): # Appositional nouns
+        if proper_noun and not DPHelper.is_proper_noun(appos): # Most likely represents auxilliary apposition phrase
+            continue
         nouns.append(get_noun_phrase(appos, proper_noun))
 
     for noun_child in list(filter(lambda noun: not DPHelper.is_leaf(noun),
                                   DPHelper.get_child_type(noun, Relations.NOUN))): # Conjuncting nouns with `and` linked with NN
         nouns.append(get_noun_phrase(noun_child, proper_noun))
     return nouns
-
-
-def get_temporal(word: Dict) -> str:
-    """
-    Given word of temporal nature, get full phrase
-    - Note positional information of root word given punctuation
-    """
-    if not word.get("children"):
-        return word["word"]
-    else:
-        full = ""
-        root_added = False
-        for child in word["children"]:
-            if child["link"] == Relations.PUNCTUATION:
-                if not root_added:
-                    full = word_join(full, word)
-                    root_added = True
-                full = "".join([full, child["word"]])
-            else:
-                full = word_join(full, child)
-        return full
 
 
 
@@ -137,6 +117,27 @@ def get_noun_phrase(noun: Dict, proper_noun=False) -> str:
             else:
                 continue
         return word_join(full, noun)
+
+
+def get_temporal(word: Dict) -> str:
+    """
+    Given word of temporal nature, get full phrase
+    - Note positional information of root word given punctuation
+    """
+    if not word.get("children"):
+        return word["word"]
+    else:
+        full = ""
+        root_added = False
+        for child in word["children"]:
+            if child["link"] == Relations.PUNCTUATION:
+                if not root_added:
+                    full = word_join(full, word)
+                    root_added = True
+                full = "".join([full, child["word"]])
+            else:
+                full = word_join(full, child)
+        return full
 
 
 def word_join(full: str, word: str):

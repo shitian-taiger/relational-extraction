@@ -10,24 +10,13 @@ def sub_obj_vbroot(root: Dict) -> List[str]:
                     |
     '''
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION): # Prepositions (eg. as)
-        '''
-        Predicate objects joined by preposition, representing relation to subj/obj pair
-        '''
         nouns = get_all_nouns(get_predicate_object(prep))
         relations = relations + nouns
 
-        '''
-        Conjunctions of preposition, referring to the same subj/obj pair
-        '''
-        conjunctions = DPHelper.get_child_type(prep, Relations.CONJUNCTION)
-        for conj in conjunctions:
-            nouns = get_all_nouns(get_predicate_object(prep))
+        # Conjuncting relations for subj and obj
+        for conj in DPHelper.get_child_type(prep, Relations.CONJUNCTION):
+            nouns = get_all_nouns(get_predicate_object(conj)) # Assume here that conjunction is also prepositional
             relations = relations + nouns
-
-    # Conjuncting relations for subj and obj
-    for conj in DPHelper.get_child_type(root, Relations.CONJUNCTION):
-        if conj["attributes"][0] == POS.NOUN:
-            relations = relations + get_all_nouns(conj)
 
     return relations
 
@@ -59,35 +48,33 @@ def subjpass(root: Dict):
     NSUBJPASS ------- ROOT(VB)
                        |
     '''
-    relations = []
-    obj = [] # Actual Named entity to find
+    relations, objs, appos_rels = [], [], []
 
-    root_relations = False # True if predicate has NNP
-
+    root_relations = False # True if predicate has NNP within preposition
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
 
         if DPHelper.has_possessor(pred_obj) and \
            DPHelper.is_proper_noun(DPHelper.get_possessor(pred_obj)): # Possessive should be named entity
-            obj = DPHelper.get_possessor(pred_obj)["word"]
+            objs = objs + [DPHelper.get_possessor(pred_obj)["word"]]
             relations = relations + get_all_nouns(pred_obj)
 
         elif DPHelper.is_proper_noun(pred_obj):
-            obj = obj + get_all_nouns(pred_obj, proper_noun=True)
+            objs = objs + get_all_nouns(pred_obj, proper_noun=True)
             root_relations = True
             for appos in DPHelper.get_appositional_phrases(pred_obj):
                 # Getting all proper nouns takes care of appositional nouns, deal with appos phrases (non NNP appos) here
                 appos_objs, appos_relations = appositional_relations(appos)
-                print("Appositional Objs: {}\nAppositional Relations: {}".format(appos_objs, appos_relations))
+                appos_rels.append({"relation": appos_relations, "obj": appos_objs})
         else:
             continue
     relations = relations + [root["word"]] if root_relations else relations
 
     for tmod in DPHelper.get_child_type(root, Relations.TEMPORAL_MODIFIER): # Temporal modifier directly by root verb
         relations = relations + [root["word"]]
-        obj = obj + [get_temporal(tmod)]
+        objs = objs + [get_temporal(tmod)]
 
-    return obj, relations
+    return objs, relations, appos_rels
 
 
 def nnroot_subj(root: Dict):
@@ -148,8 +135,8 @@ def vbroot_subj(root: Dict):
             recursive_prep_search(root, pred_obj) # FIXME This usage technically doesn't conform to function definition
 
         if DPHelper.is_proper_noun(pred_obj):
-            aux_relations = aux_relations + [get_noun_phrase(root)]
-            objs = objs + get_all_nouns(pred_obj, proper_noun=True)
+            aux_relations.append([get_noun_phrase(root)])
+            objs.append(get_all_nouns(pred_obj, proper_noun=True))
 
     for conj in DPHelper.get_child_type(root, Relations.CONJUNCTION):
         conj_prep: List[Dict] = DPHelper.get_child_type(conj, Relations.PREPOSITION)
@@ -159,8 +146,8 @@ def vbroot_subj(root: Dict):
             conj_prep_obj = get_predicate_object(conj_prep[0])
             nnp_prep_obj = get_all_nouns(conj_prep_obj, proper_noun=True)
             if nnp_prep_obj: # Relation only valid
-                objs = objs + nnp_prep_obj
-                aux_relations = aux_relations + [get_noun_phrase(conj_obj)]
+                objs.append(nnp_prep_obj)
+                aux_relations.append([get_noun_phrase(conj_obj)])
 
         elif conj_prep: # Assume here non nested prepositions in conjunction
             prep_comp = DPHelper.get_prepositional_comp(conj_prep[0])
@@ -170,12 +157,14 @@ def vbroot_subj(root: Dict):
             else:
                 conj_prep_obj = get_predicate_object(conj_prep[0])
                 if DPHelper.is_proper_noun(conj_prep_obj):
-                    objs = objs + get_all_nouns(conj_prep_obj, proper_noun=True)
-                    aux_relations = aux_relations + [conj["word"]]
+                    objs.append(get_all_nouns(conj_prep_obj, proper_noun=True))
+                    aux_relations.append([get_noun_phrase(conj)])
 
         # FIXME We assume for now that this case is mutually exclusive with first
         if not conj_prep:
-            recursive_prep_search(root, conj_obj) # FIXME (As above) This usage technically doesn't conform to function definition
+            nested_prep_relation = recursive_prep_search(root, conj_obj) # FIXME (As above) This usage technically doesn't conform to function definition
+            aux_relations.append([nested_prep_relation["relation"]])
+            objs.append([nested_prep_relation["obj"]])
 
     return objs, aux_relations
 
