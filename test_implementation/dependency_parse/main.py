@@ -63,7 +63,7 @@ def generate(root: Dict):
             logging.log(INFO, "============= NNP SUBJECT with VERB ROOT (NON-NNP DOBJ present) ===============")
             subjs = get_all_nouns(subj, proper_noun=True)
             objs, aux_relations = vbroot_subj_xobj(root)
-            relations = relations + create_relations(subj, aux_relations, objs)
+            relations = relations + create_relations(subjs, aux_relations, objs)
 
         # Root verb without concrete noun form but valid relation (E.g. lives, resides) TODO Do we require `in/from etc.` for preposition?
         elif DPHelper.is_verb(root):

@@ -17,6 +17,7 @@ class Relations:
     PREPOSITIONAL_COMP = "pcomp"
     PREDICATE_OBJECT = "pobj"
     PUNCTUATION = "punct"
+    UNKNOWN_DEPENDENCY = "dep"
 
 class POS:
     CARDINAL_NUMBER = "CD"

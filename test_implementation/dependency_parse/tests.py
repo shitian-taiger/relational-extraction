@@ -30,6 +30,10 @@ class TestBasic(unittest.TestCase):
              eval("[{'subjs': ['Federer'], 'relation': 'coach', 'objs': ['Annacone']}]")),
             ("Federer hired Annacone as his coach and business partner and as a best friend.",
              eval("[{'subjs': ['Federer'], 'relation': 'coach', 'objs': ['Annacone']}, {'subjs': ['Federer'], 'relation': 'business partner', 'objs': ['Annacone']}, {'subjs': ['Federer'], 'relation': 'best friend', 'objs': ['Annacone']}]")),
+            ("Dmitry started his career in the Russian Drama Theatre of Lithuania in Vilnius.",
+             eval("[{'subjs': ['Dmitry'], 'relation': 'career', 'objs': ['Theatre of Lithuania', 'Vilnius']}]")),
+            ("Then Dmitry directed opera and drama in many major Russian cities: Moscow, Saint Petersburg, Novosibirsk, Omsk, Samara, Kazan and others.",
+             eval("[{'subjs': ['Dmitry'], 'relation': 'opera', 'objs': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Omsk', 'Samara', 'Kazan']}, {'subjs': ['Dmitry'], 'relation': 'drama', 'objs': ['Moscow', 'Saint Petersburg', 'Novosibirsk', 'Omsk', 'Samara', 'Kazan']}]")),
             ]
         for sentence, relations in sentences:
             results = generate(dep_parse.get_tree(sentence))

@@ -55,15 +55,34 @@ def get_nested_in_pobjs(pobj: Dict) -> List[str]:
 
     The `in` preposition is a frequent enough appositional relation to warrant this
     '''
-    subjs = []
+    objs = []
     if DPHelper.is_proper_noun(pobj):
-        subjs = subjs + get_all_nouns(pobj, proper_noun=True)
+        objs = objs + get_all_nouns(pobj, proper_noun=True)
+    else:
+        objs = objs + get_colon_dep(pobj) # Special case handling
     in_preps = list(filter(lambda prep: prep["word"] == "in", DPHelper.get_child_type(pobj, Relations.PREPOSITION)))
     for in_prep in in_preps:
         nested_pobj = get_predicate_object(in_prep)
-        subjs = subjs + get_nested_in_pobjs(nested_pobj)
-    return subjs
+        objs = objs + get_nested_in_pobjs(nested_pobj)
+    return objs
 
+
+def get_colon_dep(pobj: Dict) -> List[str]:
+    '''
+    PREP ----------------- POBJ
+                             |
+                   --------------------------...
+                  |                   |
+                PUNC(:)              DEP
+
+    Possible appositional NNP due to presence of colon even when pobj is NON-NNP
+    '''
+    punc = list(filter(lambda punc: punc["word"] == ":", DPHelper.get_child_type(pobj, Relations.PUNCTUATION)))
+    dep = DPHelper.get_child_type(pobj, Relations.UNKNOWN_DEPENDENCY)
+    if punc and dep:
+        return get_all_nouns(dep[0], proper_noun=True)
+    else:
+        return []
 
 
 def get_predicate_object(prep: Dict, assertion=True) -> Dict:
@@ -79,6 +98,8 @@ def get_all_nouns(noun: Dict, proper_noun=False) -> List[str]:
     nouns = []
     nouns.append(get_noun_phrase(noun, proper_noun))
     for conj in DPHelper.get_child_type(noun, Relations.CONJUNCTION): # Conjuncting predicate objects are also relations
+        if proper_noun and not DPHelper.is_proper_noun(conj):
+            continue
         nouns.append(get_noun_phrase(conj, proper_noun))
 
     for appos in DPHelper.get_child_type(noun, Relations.APPOSITION): # Appositional nouns

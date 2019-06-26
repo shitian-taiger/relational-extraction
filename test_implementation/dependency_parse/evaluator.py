@@ -103,7 +103,7 @@ def vbroot_subj_xobj(root: Dict):
     - Most relevant to cases with basic prepositions such `in / from etc.`
 
     NSUBJ(NNP) ------- ROOT(VB) ---------- DOBJ(NN)
-                     |
+                          |
     '''
     relations = get_all_nouns(DPHelper.get_object(root))
     objs = []
