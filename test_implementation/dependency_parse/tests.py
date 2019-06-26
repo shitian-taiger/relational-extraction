@@ -52,7 +52,7 @@ class TestBasic(unittest.TestCase):
             ("Harry retired from law enforcement and was a business employer before pursuing politics.",
              eval("[]")),
             ("After a brief stint as a teacher at Manchester Grammar School, Stapledon worked in shipping offices in Liverpool and Port Tortilla from 1910 to 1913.",
-             eval("[{'subjs': ['Stapledon'], 'relation': 'worked', 'objs': ['Port Tortilla', 'Liverpool']}]"))
+             eval("[{'subjs': ['Stapledon'], 'relation': 'teacher', 'objs': ['Manchester Grammar School']}, {'subjs': ['Stapledon'], 'relation': 'worked', 'objs': ['Port Tortilla', 'Liverpool']}]"))
             ]
         for sentence, relations in sentences:
             results = generate(dep_parse.get_tree(sentence))
