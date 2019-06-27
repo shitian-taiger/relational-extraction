@@ -17,6 +17,7 @@ class Relations:
     PREPOSITIONAL_COMP = "pcomp"
     PREDICATE_OBJECT = "pobj"
     PUNCTUATION = "punct"
+    RELATIVE_CLAUSE_MODIFIER = "rcmod"
     UNKNOWN_DEPENDENCY = "dep"
 
 class POS:
@@ -30,3 +31,4 @@ class POS:
     VERB_PAST_PARTICIPLE = "VBN"
     VERB_3SP = "VBZ" # 3rd person singular present
     VERB_NON_3SP = "VBP"
+    WH_PRONOUN = "WP"

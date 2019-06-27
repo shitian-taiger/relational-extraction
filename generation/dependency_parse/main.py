@@ -80,10 +80,11 @@ def generate(root: Dict):
         logging.log(INFO, "============== NOUN ROOT - No Direct SUBJ and OBJ ================")
 
         if subj is not None: # Mostly likely noun with possessive or nested
-            logging.log(INFO, "============= NESTED POSSESSIVE OF PASSIVE SUBJECT ===============")
             if (subj["link"] == Relations.PASSIVE_NOM_SUBJECT): # Necessarily assume this since noun subj is possessive, else should Corefer
+                logging.log(INFO, "============= NESTED POSSESSIVE OF PASSIVE SUBJECT ===============")
                 subjs = subjpass_poss(subj)
-
+            if DPHelper.has_rc_modifier(root): # NNP still might be present in rc modifier
+                logging.log(INFO, "============= RELATIVE CLAUSE MODIFIER PRESENT ===============")
 
         if DPHelper.is_proper_noun(root):
             subj, relations, obj = nnproot(root)

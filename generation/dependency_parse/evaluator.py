@@ -215,3 +215,30 @@ def subjpass_poss(subjpass: Dict):
             subjs = subjs + list(map(lambda nnp: get_noun_phrase(nnp, proper_noun=True), subjs_raw))
         return subjs
 
+
+def subj_rcmod(root: Dict):
+    '''
+    SUBJ(NN) ------------- ROOT
+                             |
+                           RCMOD
+    '''
+    assert(DPHelper.has_rc_modifier(root))
+    subj = DPHelper.get_subject(root)
+    obj = DPHelper.get_object(root)
+    subjs, relations, objs = [], [], []
+    if DPHelper.is_proper_noun(subj): # Assume there is a subject
+        subjs = get_noun_phrase(subj, proper_noun=True)
+    elif subj["attributes"][0] == POS.WH_PRONOUN and DPHelper.is_proper_noun(root):
+        # If subject is not directly known, refer to direct parent of modifier
+        subjs = get_noun_phrase(root, proper_noun=True)
+    else: # Pass if unable to find subject
+        return subjs, relations, objs
+
+    for prep in DPHelper.get_child_type(rcmod, Relations.PREPOSITION):
+        for conj in DPHelper.get_child_type(prep, Relations.CONJUNCTION):
+            relations = recursive_prep_search()
+
+    for conj in DPHelper.get_child_type(prep, Relations.CONJUNCTION):
+        return subjs, relations, objs
+
+

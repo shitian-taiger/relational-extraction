@@ -38,7 +38,7 @@ test_sentences = [
     ]
 
 
-# logging.basicConfig(level=logging.INFO) # Defaults to WARN, enable only here
+logging.basicConfig(level=logging.INFO) # Defaults to WARN, enable only here
 if __name__ == "__main__":
 
     suite = unittest.TestLoader().loadTestsFromModule(dependency_parse.tests)
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
     dep_parse = DepParse()
 
-    for sentence in test_sentences:
+    for sentence in sentences:
         root = dep_parse.get_tree(sentence)
         print("\n%s" % sentence)
         results = generate(root)
