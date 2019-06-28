@@ -2,6 +2,7 @@ import re
 import os
 import numpy as np
 import torch
+import os
 
 from torch.nn import Embedding
 
@@ -34,7 +35,7 @@ class Pretrained_Embeddings:
         embeddings = []
         embeddings.append(np.zeros(shape=self.num_dim, dtype='float32'))
 
-        f = open(os.path.join(self.file_dir, self.file_name))
+        f = open(os.path.abspath(os.path.join(self.file_dir, self.file_name)))
         for line in f:
             values = line.split()
             word = values[0]
@@ -43,6 +44,7 @@ class Pretrained_Embeddings:
             embeddings.append(coeffs)
         f.close()
         vocab_size = len(embeddings)
+        print(vocab_size)
 
         return word_index, embeddings, vocab_size
 
@@ -84,3 +86,6 @@ class Pretrained_Embeddings:
 def create_pretrained_embeddings(FILE_DIR, FILE_NAME):
     NUM_DIM = int(re.search("[0-9]+d", FILE_NAME).group()[:-1])
     return Pretrained_Embeddings(FILE_DIR, FILE_NAME, NUM_DIM)
+
+if __name__ == "__main__":
+    create_pretrained_embeddings("../glove.6B", "glove.6B.100d.txt")

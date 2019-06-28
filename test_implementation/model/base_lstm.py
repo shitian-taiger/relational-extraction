@@ -1,8 +1,7 @@
 import torch
 import numpy as np
 from torch import Tensor
-from torch.nn import Parameter
-from utils import Dim_Index
+from torch.nn import Module, Parameter
 
 from typing import Dict, Optional, Tuple
 
@@ -16,7 +15,7 @@ class LSTM(torch.nn.Module):
 
     def __init__(self, config: Dict):
 
-        super(LSTM).__init__()
+        super().__init__()
         self.input_size = config["input_size"]
         self.hidden_size = config["hidden_size"]
         self.weight_ih = Parameter(Tensor(self.input_size, self.hidden_size * 4))
@@ -28,9 +27,9 @@ class LSTM(torch.nn.Module):
     def initialize_weights(self):
         for parameter in self.parameters():
             if parameter.data.ndimension() >= 2:
-                torch.nn.init.xavier_uniform_(parameter.data)
+                torch.nn.init.xavier_uniform_(parameter.data) # Initialization of weights
             else:
-                torch.nn.init.zeros_(parameter.data)
+                torch.nn.init.zeros_(parameter.data) # Initialization of bias
 
 
     def initialize_states(self) -> Tuple[Tensor]:
@@ -75,7 +74,7 @@ class LSTM(torch.nn.Module):
             hidden_sequence = torch.cat([hidden_sequence, h_t.unsqueeze(0)], 0)
 
         # [seq_len, batch_size, output_size] -> [batch_size, seq_len, output_size]
-        hidden_sequence.transpose_(Dim_Index.batch, Dim_Index.sequence_length)
+        hidden_sequence.transpose_(0, 1)
 
         return hidden_sequence, (h_t, c_t)
 
