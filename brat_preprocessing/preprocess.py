@@ -101,6 +101,7 @@ def process_all():
 
     num_files = 0
     num_files_no_data = 0
+    num_annotated_files_no_data = 0
     total_instances = 0
 
     for dir_name in os.listdir(process_dir):
@@ -115,12 +116,15 @@ def process_all():
                 if num_instance_tagged == -1:
                     num_files_no_data += 1
                 else:
+                    if num_instance_tagged == 0:
+                        num_annotated_files_no_data += 1
                     total_instances += num_instance_tagged
                     with open(os.path.join(annotated_dir, "tagged.txt"), "a+") as tag_file: # Append to file
                         tag_file.write(tagged)
 
     print("NUMBER OF INSTANCES: %s" % total_instances)
-    print("NUMBER OF FILES PROCESSED: %s" % (num_files - num_files_no_data))
+    print("NUMBER OF FILES ANNOTATED: %s" % (num_files - num_files_no_data))
+    print("NUMBER OF ANNOTATED FILES NO DATA: %s" % (num_annotated_files_no_data))
     print("TOTAL NUMBER OF FILES: %s" % num_files)
     print("NUMBER OF FILES NOT ANNOTATED: %s" % num_files_no_data)
 
