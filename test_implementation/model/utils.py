@@ -1,6 +1,8 @@
 import logging
 import numpy as np
 import spacy
+from torch import Tensor
+from pathlib import Path
 from typing import Dict, List
 from enum import Enum
 
@@ -13,11 +15,12 @@ class constants:
 
 class LSTM_Direction(Enum):
     forward = 0
+    backward = 1
 
 
 class Vocabulary:
 
-    def __init__(self, words: List):
+    def __init__(self, words=[]):
         # Bidirectional mapping of words of indexes
         self.word_to_idx, self.idx_to_word = self.instantiate(words)
         self.vocab_len = len(self.idx_to_word)
@@ -34,8 +37,7 @@ class Vocabulary:
         idx_word_map.append(constants.UNKNOWN)
 
         # Add words to vocab
-        for i in range(len(words)):
-            word = words[i]
+        for i, word in enumerate(words):
             word_idx_map[word] = i + 2
             idx_word_map.append(word)
 
@@ -43,20 +45,26 @@ class Vocabulary:
 
 
     def add_word(self, word: str):
-        """
-        Facilitates dynamic addition, for loading from file use load_from_file
-        """
         if word in self.word_to_idx:
             logging.log(logging.WARN, "Word: [%s] already in vocab" % word)
         else:
-            self.idx_to_word[self.vocab_len] = word
+            self.idx_to_word.append(word)
             self.word_to_idx[word] = self.vocab_len
             self.vocab_len = self.vocab_len + 1
 
 
-    def load_from_file(self, file_dir: str):
-        # TODO Implement
-        return
+    def load_from_dir(self):
+        """
+        Loads vocabulary tokens directly from file
+        """
+        tokens = "tokens.txt"
+        cwd = Path().resolve()
+        vocab_dir = Path.joinpath(cwd, "vocab")
+        with open(Path.joinpath(vocab_dir, tokens)) as v:
+            for line in v:
+                if "@@UNKNOWN" in line: # Ignore UNK tag from Allen, already present in constants
+                    continue
+                self.add_word(line.split("\n")[0])
 
 
     def get_word_from_index(self, index: int):
@@ -115,7 +123,7 @@ class Preprocessor:
             padded_batch_preds[i, 0:instance_len] = pred_vec[:]
             instance_lengths.append(instance_len)
 
-        return padded_batch_sentences, padded_batch_preds, instance_lengths
+        return Tensor(padded_batch_sentences), Tensor(padded_batch_preds), instance_lengths
 
 
     def _pair_sentence_pred(self, sentence: str) -> List[Dict]:

@@ -1,8 +1,10 @@
-__pycache__/
 .vscode/
-brat_preprocessing/annotated
-test_implementation/glove.6B
-generate/archived_models
-data/
 .DS_Store
 .ipynb_checkpoints
+__pycache__/
+data/
+brat_preprocessing/annotated
+generation/archived_models
+test_implementation/glove.6B
+test_implementation/vocab
+test_implementation/weights
