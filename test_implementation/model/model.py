@@ -1,6 +1,6 @@
 import torch
 from torch import Tensor
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_sequence
 from pathlib import Path
 from .utils import *
 from .h_d_lstm import CustomLSTM
@@ -13,6 +13,7 @@ class REModel(torch.nn.Module):
         self.config = config
         self._load_embeddings(config["num_embeddings"], config["embedding_dim"])
         self.bdlstm = self._instantiate_bdlstm()
+        self._load_tag_layer()
 
 
     def _load_embeddings(self, num_embeddings, embedding_dim):
@@ -49,6 +50,15 @@ class REModel(torch.nn.Module):
                            input_bias,
                            state_weights,
                            state_bias)
+
+
+    def _load_tag_layer(self):
+        cwd = Path().resolve()
+        tag_layer_weights: Tensor = torch.load(Path.joinpath(cwd, "weights/tag_layer_weights"))
+        tag_layer_bias: Tensor = torch.load(Path.joinpath(cwd, "weights/tag_layer_bias"))
+        self.tag_layer = torch.nn.Linear(self.config["hidden_size"], self.config["num_classes"])
+        self.tag_layer.weight = tag_layer_weights
+        self.tag_layer.bias = tag_layer_bias
 
     def sort_and_pack_embeddings(self, full_embeddings: Tensor, lengths: List):
         """
