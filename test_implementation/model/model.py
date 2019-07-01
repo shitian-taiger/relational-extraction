@@ -1,5 +1,9 @@
 import torch
+from torch import Tensor
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+from pathlib import Path
 from .utils import *
+from .h_d_lstm import CustomLSTM
 
 
 class REModel(torch.nn.Module):
@@ -20,7 +24,6 @@ class REModel(torch.nn.Module):
         self.verb_embedding = torch.nn.Embedding(2, embedding_dim, _weight=verb_emb_weights)
 
 
-    def forward(self, input: Dict):
     def _instantiate_bdlstm(self):
         input_size = self.config["input_size"]
         hidden_size = self.config["hidden_size"]
@@ -46,8 +49,47 @@ class REModel(torch.nn.Module):
                            input_bias,
                            state_weights,
                            state_bias)
+
+    def sort_and_pack_embeddings(self, full_embeddings: Tensor, lengths: List):
+        """
+        Sorts instances of sentences, predicates based on length (Longest --> Shortest)
+        Returns a packed sequence (batch first)
+        """
+        zipped_embeddings_lengths = zip(full_embeddings, lengths)
+        sorted_embeddings_lengths = sorted(zipped_embeddings_lengths, key=lambda x: x[1], reverse=True)
+        sorted_embeddings, sorted_lengths = [list(t) for t in zip(*sorted_embeddings_lengths)]
+        sorted_embeddings = torch.stack(sorted_embeddings)
+        return pack_padded_sequence(sorted_embeddings, sorted_lengths, batch_first=True)
+
+
+    def forward(self, input_dict: Dict):
         """
         Takes as input dictionary of { "sent_vec": Tensor, "pred_vec": Tensor }
+        Concatenates the embedded sentence and its corresponding verb
         """
+        sent_vec, pred_vec = input_dict["sent_vec"], input_dict["pred_vec"]
+        embedded_sentences = self.token_embedding(sent_vec)
+        embedded_verbs = self.verb_embedding(pred_vec)
+        full_embeddings = torch.cat([embedded_sentences, embedded_verbs], dim=-1)
+
+        # Sort and pack padded sequence
+        packed = self.sort_and_pack_embeddings(full_embeddings, input_dict["lengths"])
+
+        # TODO Why do we need to store final states (For training?)
+        final_states = []
+
+        hidden_states = [None] * len(self.lstm_layers)
+        output_sequence: PackedSequence = packed
+        for i, state in enumerate(hidden_states):
+            layer = self.lstm_layers[i]
+            output_sequence, final_state = layer(output_sequence, state)
+            final_states.append(final_state)
+
+        # TODO Why do we need to store final states
+        final_hidden_state, final_cell_state = tuple(torch.cat(state_list, 0) for state_list in zip(*final_states))
+
+         = pad_packed_sequence(output_sequence, batch_first=True)
+        # return output_sequence, (final_hidden_state, final_cell_state)
+
 
 
