@@ -1,41 +1,51 @@
 import torch
 from torch.nn.utils.rnn import pack_padded_sequence
 
+from model.model import REModel
 from model.utils import *
 from model.h_d_lstm import CustomLSTM
+from model.decoder import Decoder
 
-
+config = {
+    "input_size": 200,
+    "hidden_size": 300,
+    "highway": True,
+    "dropout": 0.2,
+    "direction": LSTM_Direction.forward,
+    "embedding_dim": 100,
+    "layers": 8,
+    "num_classes": 62
+}
 
 if __name__ == "__main__":
 
-    config = {
-        "input_size": 200,
-        "hidden_size": 300,
-        "highway": True,
-        "dropout": 0.2,
-        "direction": LSTM_Direction.forward
-    }
-    custom = CustomLSTM(config)
-
     sentences = [
-        "Words are great because of Linguistics",
-        "Linguistics is the best."
+        "Harry is a random dude.",
+        "Linguistics is extremely interesting while being highly relevant.",
         ]
-    words = ["Words", "best", "are", "great", "Linguistics"]
-    vocab = Vocabulary(words)
+
+    vocab = Vocabulary()
+    vocab.load_from_dir()
+    config["num_embeddings"] = vocab.vocab_len
+
 
     prec = Preprocessor()
     vectorized_pairs: List[Dict] = []
+    """
+    Vectorize pairs to: {'sent_vec': [index of word in vocab], 'pred_vec': [binarized]}
+    """
     for sentence in sentences:
         vectorized_pairs += prec.vectorize_sentence(sentence, vocab)
 
-    sents, preds, lens = prec.pad_batch(vectorized_pairs)
-    sents = torch.Tensor(sents)
-    preds = torch.Tensor(preds)
-    lens = torch.Tensor(lens)
+    sents, preds, lens, mask = prec.pad_batch(vectorized_pairs)
 
-    packed = pack_padded_sequence(sents, lens, batch_first=True)
-    print(type(packed))
-    # custom.forward(paired[0])
+    model_input = { "sent_vec": sents.long(), "pred_vec": preds.long(),
+                    "lengths": lens, "mask": mask }
 
+    re_model = REModel(config)
+    output = re_model(model_input)
+
+    decoder = Decoder(vocab)
+    output_tags = decoder.decode(output)
+    print(output_tags['tags'])
 
