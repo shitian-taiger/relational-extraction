@@ -60,16 +60,53 @@ class REModel(torch.nn.Module):
         self.tag_layer.weight = tag_layer_weights
         self.tag_layer.bias = tag_layer_bias
 
+
     def sort_and_pack_embeddings(self, full_embeddings: Tensor, lengths: List):
         """
         Sorts instances of sentences, predicates based on length (Longest --> Shortest)
-        Returns a packed sequence (batch first)
+        Returns:
+            Packed sequence (batch first)
+            Indices to restore the original order of the sequences
         """
-        zipped_embeddings_lengths = zip(full_embeddings, lengths)
+
+        assert(len(full_embeddings) == len(lengths))
+
+        # Zip list of numbering indices for restoration purposes
+        zipped_embeddings_lengths = zip(full_embeddings, lengths, range(len(lengths)))
         sorted_embeddings_lengths = sorted(zipped_embeddings_lengths, key=lambda x: x[1], reverse=True)
-        sorted_embeddings, sorted_lengths = [list(t) for t in zip(*sorted_embeddings_lengths)]
+        sorted_embeddings, sorted_lengths, original_order = [list(t) for t in zip(*sorted_embeddings_lengths)]
         sorted_embeddings = torch.stack(sorted_embeddings)
-        return pack_padded_sequence(sorted_embeddings, sorted_lengths, batch_first=True)
+        return pack_padded_sequence(sorted_embeddings, sorted_lengths, batch_first=True), original_order
+
+
+    def unpack_and_reorder(self, packed_output: PackedSequence, original_order: List[int]):
+        """
+        Unpacks packed sequence and reorders according to original index
+        """
+        unpacked = pad_packed_sequence(packed_output, batch_first=True)
+        unpacked_tensors = unpacked[0]
+        zipped_tensors = zip(unpacked_tensors, original_order)
+        sorted_zipped_tensors = sorted(zipped_tensors, key=lambda x: x[1])
+        sorted_tensors, _ = [list(t) for t in zip(*sorted_zipped_tensors)]
+        return torch.stack(sorted_tensors)
+
+
+    def get_output_dict(self, output_tensors: Tensor, mask: Tensor):
+        """
+        For each time step of the output, apply tag_layer to obtain logits for tag classification
+            - `TimeDistributed` class not available in Pytorch, imitate functionality
+        Softmax for retrieval of class probabilities
+        """
+        batch_size, time_steps, output_dim = output_tensors.shape
+        output_tensor_flattened = output_tensors.view(batch_size * time_steps, output_dim)
+        logits_flattened = self.tag_layer(output_tensor_flattened)
+        logits = logits_flattened.view(batch_size, time_steps, self.config["num_classes"])
+
+        # Get class probabilities directly
+        class_probs_flattened = torch.nn.functional.softmax(logits_flattened, dim=-1)
+        class_probs = class_probs_flattened.view([batch_size, time_steps, self.config["num_classes"]])
+
+        return { "logits": logits, "class_probabilities": class_probs, "mask": mask }
 
 
     def forward(self, input_dict: Dict):
@@ -83,7 +120,7 @@ class REModel(torch.nn.Module):
         full_embeddings = torch.cat([embedded_sentences, embedded_verbs], dim=-1)
 
         # Sort and pack padded sequence
-        packed = self.sort_and_pack_embeddings(full_embeddings, input_dict["lengths"])
+        packed, original_order = self.sort_and_pack_embeddings(full_embeddings, input_dict["lengths"])
 
         # TODO Why do we need to store final states (For training?)
         final_states = []
@@ -98,8 +135,9 @@ class REModel(torch.nn.Module):
         # TODO Why do we need to store final states
         final_hidden_state, final_cell_state = tuple(torch.cat(state_list, 0) for state_list in zip(*final_states))
 
-         = pad_packed_sequence(output_sequence, batch_first=True)
-        # return output_sequence, (final_hidden_state, final_cell_state)
+        output_tensors = self.unpack_and_reorder(output_sequence, original_order)
+        output_dict = self.get_output_dict(output_tensors, input_dict["mask"])
+        return output_dict
 
 
 

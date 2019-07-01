@@ -115,15 +115,17 @@ class Preprocessor:
         padded_batch_sentences = np.full((batch_size, max_len), constants.PAD_INDEX)
         padded_batch_preds = np.full((batch_size, max_len), constants.PAD_INDEX)
         instance_lengths = [] # This is required for pack_padded_sequence
+        mask = np.full((batch_size, max_len), 0) # 1 if index is valid for sentence else 0
 
         for i, instance in enumerate(batch_instances): # Fill batch with actual values
             sent_vec, pred_vec = instance["sent_vec"], instance["pred_vec"]
             instance_len = len(sent_vec)
             padded_batch_sentences[i, 0:instance_len] = sent_vec[:]
             padded_batch_preds[i, 0:instance_len] = pred_vec[:]
+            mask[i, 0:instance_len] = 1
             instance_lengths.append(instance_len)
 
-        return Tensor(padded_batch_sentences), Tensor(padded_batch_preds), instance_lengths
+        return Tensor(padded_batch_sentences), Tensor(padded_batch_preds), instance_lengths, Tensor(mask)
 
 
     def _pair_sentence_pred(self, sentence: str) -> List[Dict]:
