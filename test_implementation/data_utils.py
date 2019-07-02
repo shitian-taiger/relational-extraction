@@ -13,6 +13,8 @@ def format_label(label: str):
         else: # SRL BIO-ARGX
             swapped.append(label.split("-")[0][0] + "RG" + label.split("-")[0][1:])
         return "-".join(swapped)
+
+
 def get_tokens_oie(file_path: str):
     df = pd.read_csv(file_path, sep="\t")
     tokens, tags = [], []
