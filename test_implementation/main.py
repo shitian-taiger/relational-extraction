@@ -17,6 +17,28 @@ config = {
     "num_classes": 62
 }
 
+def preprocess_batch_tagless(tokens_list: List[List], prec: Preprocessor):
+    # Vectorize pairs to: {'sent_vec': [index of word in vocab], 'pred_vec': [binarized]}
+    vectorized_pairs: List[Dict] = []
+    for i, sentence in enumerate(sentences):
+        vectorized_pair = prec.vectorize_sentence(sentence)
+        vectorized_pairs += vectorized_pair
+    sents, preds, lens, mask = prec.pad_batch(vectorized_pairs)
+    return { "sent_vec": sents.long(), "pred_vec": preds.long(), "lengths": lens, "mask": mask }
+
+
+def preprocess_batch(tokens_list: List[List], tags_list: List[List], prec: Preprocessor):
+    # Vectorize pairs to: {'sent_vec': [index of word in vocab], 'pred_vec': [binarized]}
+    vectorized_list: List[Dict] = []
+    for i, tokens in enumerate(tokens_list):
+        tags = tags_list[i]
+        vectorized: List[Dict] = prec.vectorize_tokens(tokens, tags)
+        vectorized_list += vectorized
+    sents, preds, lens, mask, tags = prec.pad_batch(vectorized_list)
+    return { "sent_vec": sents.long(), "pred_vec": preds.long(),
+             "lengths": lens, "mask": mask, "tags": tags }
+
+
 if __name__ == "__main__":
 
     sentences = [

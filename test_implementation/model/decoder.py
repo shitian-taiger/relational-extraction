@@ -7,8 +7,8 @@ class Decoder:
     As implemented in ALLEN
     """
 
-    def __init__(self, vocab: Vocabulary):
-        self.labels = Labels()
+    def __init__(self, vocab: Vocabulary, labels: Labels):
+        self.labels = labels
         self.vocab = vocab
 
     def decode(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
@@ -157,42 +157,3 @@ class Decoder:
         of the sequences in the batch.
         """
         return mask.long().sum(-1)
-
-
-class Labels:
-
-    def __init__(self):
-        self.vocab_len = 0
-        self.word_to_idx: Dict = {}
-        self.idx_to_word = {}
-        self.load_from_dir()
-
-    def load_from_dir(self):
-        """
-        Loads vocabulary tokens directly from file
-        """
-        labels = "labels.txt"
-        cwd = Path().resolve()
-        vocab_dir = Path.joinpath(cwd, "vocab")
-        with open(Path.joinpath(vocab_dir, labels)) as l:
-            for line in l:
-                self.add_word(line.split("\n")[0])
-
-    def add_word(self, word: str):
-        if word in self.word_to_idx:
-            logging.log(logging.WARN, "Word: [%s] already in vocab" % word)
-        else:
-            self.idx_to_word[self.vocab_len] = word
-            self.word_to_idx[word] = self.vocab_len
-            self.vocab_len = self.vocab_len + 1
-
-    def get_word_from_index(self, index: int):
-        assert(index < self.vocab_len)
-        return self.idx_to_word[index]
-
-
-    def get_index_from_word(self, word: str):
-        assert(isinstance(word, str))
-        return self.word_to_idx[word] if word in self.word_to_idx else \
-            self.word_to_idx[0]
-
