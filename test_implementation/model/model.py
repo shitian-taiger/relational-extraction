@@ -38,6 +38,7 @@ class REModel(torch.nn.Module):
             layer = CustomLSTM(self.config) # Pass configuration to LSTM
             self._load_layer_weights(layer, layer_index) # Load in custom weights for layers
             self.lstm_layers.append(layer)
+            self.add_module("lstm_layer{}".format(layer_index), layer) # Registration of parameter under model
             self.config["input_size"] = hidden_size # Change input size of layers 2 - 8
 
 
@@ -123,7 +124,7 @@ class REModel(torch.nn.Module):
         # Sort and pack padded sequence
         packed, original_order = self.sort_and_pack_embeddings(full_embeddings, input_dict["lengths"])
 
-        # TODO Why do we need to store final states (For training?)
+        # TODO Why do we need to store final states?
         final_states = []
 
         hidden_states = [None] * len(self.lstm_layers)
@@ -140,7 +141,8 @@ class REModel(torch.nn.Module):
         output_dict = self.get_output_dict(output_tensors, input_dict["mask"]) # Class probabilities to be decoded
 
         if self.train:
-            self.compute_loss(output_dict["logits"], input_dict["tags_vec"], input_dict["mask"])
+            loss = self.compute_loss(output_dict["logits"], input_dict["tags_vec"], input_dict["mask"])
+            output_dict["loss"] = loss
 
         return output_dict
 
@@ -149,12 +151,9 @@ class REModel(torch.nn.Module):
         """
         Custom loss computation
         """
-        # shape : (batch * sequence_length, num_classes)
-        logits_flat = logits.view(-1, logits.size(-1))
-        # shape : (batch * sequence_length, num_classes)
-        log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=-1)
-        # shape : (batch * max_len, 1)
-        tags_flat = tags.view(-1, 1).long()
+        logits_flat = logits.view(-1, logits.size(-1)) # (batch * sequence_length, num_classes)
+        log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=-1) # (batch * sequence_length, num_classes)
+        tags_flat = tags.view(-1, 1).long() # (batch * max_len, 1)
 
         negative_log_likelihood_flat = - torch.gather(log_probs_flat, dim=1, index=tags_flat)
         negative_log_likelihood = negative_log_likelihood_flat.view(*tags.size())
@@ -164,5 +163,5 @@ class REModel(torch.nn.Module):
         per_batch_loss = negative_log_likelihood.sum(1) / (mask.sum(1).float() + 1e-13)
         num_non_empty_sequences = ((mask.sum(1) > 0).float().sum() + 1e-13)
         loss = per_batch_loss.sum() / num_non_empty_sequences
-        print(loss)
+        return loss
 
