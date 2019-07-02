@@ -14,6 +14,7 @@ class REModel(torch.nn.Module):
         self._load_embeddings(config["num_embeddings"], config["embedding_dim"])
         self.bdlstm = self._instantiate_bdlstm()
         self._load_tag_layer()
+        self.train = False # Turn this on for training
 
 
     def _load_embeddings(self, num_embeddings, embedding_dim):
@@ -136,8 +137,32 @@ class REModel(torch.nn.Module):
         final_hidden_state, final_cell_state = tuple(torch.cat(state_list, 0) for state_list in zip(*final_states))
 
         output_tensors = self.unpack_and_reorder(output_sequence, original_order)
-        output_dict = self.get_output_dict(output_tensors, input_dict["mask"])
+        output_dict = self.get_output_dict(output_tensors, input_dict["mask"]) # Class probabilities to be decoded
+
+        if self.train:
+            self.compute_loss(output_dict["logits"], input_dict["tags_vec"], input_dict["mask"])
+
         return output_dict
 
 
+    def compute_loss(self, logits: Tensor, tags: Tensor, mask: Tensor):
+        """
+        Custom loss computation
+        """
+        # shape : (batch * sequence_length, num_classes)
+        logits_flat = logits.view(-1, logits.size(-1))
+        # shape : (batch * sequence_length, num_classes)
+        log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=-1)
+        # shape : (batch * max_len, 1)
+        tags_flat = tags.view(-1, 1).long()
+
+        negative_log_likelihood_flat = - torch.gather(log_probs_flat, dim=1, index=tags_flat)
+        negative_log_likelihood = negative_log_likelihood_flat.view(*tags.size())
+        negative_log_likelihood = negative_log_likelihood * mask.float()
+
+        # shape : (batch_size,)
+        per_batch_loss = negative_log_likelihood.sum(1) / (mask.sum(1).float() + 1e-13)
+        num_non_empty_sequences = ((mask.sum(1) > 0).float().sum() + 1e-13)
+        loss = per_batch_loss.sum() / num_non_empty_sequences
+        print(loss)
 
