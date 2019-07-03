@@ -13,6 +13,7 @@ class Decoder:
         self.labels = labels
         self.vocab = vocab
 
+
     def decode(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         all_predictions = output_dict['class_probabilities']
         sequence_lengths = self.get_lengths_from_binary_sequence_mask(output_dict["mask"]).data.tolist()
@@ -29,6 +30,7 @@ class Decoder:
             all_tags.append(tags)
         output_dict['tags'] = all_tags
         return output_dict
+
 
     def get_viterbi_pairwise_potentials(self):
         """
@@ -157,3 +159,5 @@ class Decoder:
         of the sequences in the batch.
         """
         return mask.long().sum(-1)
+
+

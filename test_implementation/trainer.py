@@ -1,6 +1,8 @@
+import re
 import torch
 from torch.nn.utils.rnn import pack_padded_sequence
 
+from typing import Tuple, Dict, List
 from model.decoder import Decoder
 from model.model import REModel
 from model.utils import *
@@ -34,10 +36,10 @@ class Trainer:
         if training_config:
             self.training_config = training_config
             self.optimizer = torch.optim.Adam(self.model.parameters())
-            self.model.train = True
 
 
     def train(self):
+        self.model.train = True
 
         if not self.training_config:
             raise("No training configuration given")
@@ -45,8 +47,6 @@ class Trainer:
         epochs = self.training_config["epochs"]
         batch_size = self.training_config["batch_size"]
 
-        p = Path(__file__).parent.resolve()
-        file_dir = Path.joinpath(p.parent, "data/OIE/train.oie.conll")
         for i in range(epochs):
             batch_tokens, batch_tags = [], []
             for tokens, tags in get_tokens_oie(file_dir):
@@ -59,10 +59,8 @@ class Trainer:
                     loss.backward()
                     self.optimizer.step()
 
-                    print(batch_tags)
-                    print(self.decoder.decode(output)["tags"])
-
                     print("Batch loss: {}".format(loss))
+
                     batch_tokens, batch_tags = [], []
 
                 if tokens and tags: # Omit cases where there are empty sentences
@@ -70,7 +68,94 @@ class Trainer:
                     batch_tags.append(tags)
 
 
-    def preprocess_batch_tagless(self, sentence: List[str]):
+
+    def predict(self, sentence: str):
+        self.model.train = False
+        vectorized_sentence = self.preprocessor.vectorize_sentence(sentence)[0]["sent_vec"]
+        model_input = self.preprocess_batch_tagless([sentence])
+        output = self.model(model_input)
+        output_tags = self.decoder.decode(output)["tags"]
+        rel_tuples: Tuple = self._parse_tags( {"tags_list": output_tags, # Mutiple tag ouputs possible per sentence
+                                              "sent_vec": vectorized_sentence} )
+        return rel_tuples
+
+
+    def _parse_tags(self, output_dict: Dict):
+        """
+        Given a vectorized sentence (vocabulary word indexes) and output tags for the sentence,
+        generate tuples of relations
+        Arguments:
+            Dictionary containing "sent_vec": `sentence vector` and "tags_list": `list of tags`
+            Note that tags is a nested list since multiple predicates can be present in the sentence
+        Returns:
+            tuples: List of < arg, rel, arg > tuples
+        """
+        tags_list, sentence_vector = output_dict["tags_list"], output_dict["sent_vec"]
+        # Double check token and tag lengths
+        for tags in tags_list:
+            assert(len(tags) == len(sentence_vector))
+
+        tuples: List[Tuple] = []
+        for tags in tags_list:
+            tags_iter = iter(tags)
+            pre_rel_args, rel, post_rel_args = [], [], []
+            rel_found = False
+            curr_index = 0
+            for tag in tags_iter:
+                # Beginning of Verb or verbial modifier, append all tags till we hit `B-V`
+                if tag == "B-V" or tag == "B-BV":
+                    rel.append(sentence_vector[curr_index])
+                    curr_index += 1
+                    next_tag = tags[curr_index]
+                    while (not tag == "B-V" and not next_tag == "B-V"):
+                        next(tags_iter)
+                        rel.append(sentence_vector[curr_index])
+                        curr_index += 1
+                        next_tag = tags[curr_index]
+                    rel_found = True
+                # Beginning of ARG, append until next tag is not an I-tag
+                elif re.search("B-", tag):
+                    arg: List = [sentence_vector[curr_index]]
+                    curr_index += 1
+                    next_tag = tags[curr_index]
+                    while re.search("I-", next_tag):
+                        next(tags_iter)
+                        arg.append(sentence_vector[curr_index])
+                        curr_index += 1
+                        next_tag = tags[curr_index]
+                    if rel_found:
+                        post_rel_args.append(arg)
+                    else:
+                        pre_rel_args.append(arg)
+                else:
+                    curr_index += 1
+
+            # Translate all tupled word indexes phrases
+            for pre_arg in pre_rel_args:
+                for post_arg in post_rel_args:
+                    tuples.append((self._get_phrase(pre_arg), self._get_phrase(rel), self._get_phrase(post_arg)))
+        return tuples
+
+
+    def _get_phrase(self, token_indexes: List):
+        # Given list of token indexes, map indexes to dictionary and join them according to punctuation
+        phrase = ""
+        hyphen = False
+        for token_index in token_indexes:
+            word = self.vocab.idx_to_word[token_index]
+            if re.search("'", word) or re.search(",", word):
+                phrase = "".join([phrase, word])
+            elif re.search("-", word):
+                phrase = "".join([phrase, word])
+            elif hyphen:
+                phrase = "".join([phrase, word])
+                hyphen = False
+            else:
+                phrase = " ".join([phrase, word])
+        return phrase
+
+
+    def preprocess_batch_tagless(self, sentences: List[str]):
         """
         Preprocessing for sentences, purely for prediction purposes, tags not required
         Arguments:
