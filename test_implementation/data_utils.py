@@ -3,6 +3,7 @@ import pandas as pd
 from string import punctuation
 
 def format_label(label: str):
+    # Reformat to IOB-2
     if label == 'O':
         return label
     else:

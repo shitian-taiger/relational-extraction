@@ -40,7 +40,6 @@ class Vocabulary:
         for i, word in enumerate(words):
             word_idx_map[word] = i + 2
             idx_word_map.append(word)
-
         return word_idx_map, idx_word_map
 
 
@@ -54,9 +53,7 @@ class Vocabulary:
 
 
     def load_from_dir(self):
-        """
-        Loads vocabulary tokens directly from file
-        """
+        # Loads vocabulary tokens directly from file
         tokens = "tokens.txt"
         cwd = Path().resolve()
         vocab_dir = Path.joinpath(cwd, "vocab")
@@ -81,39 +78,37 @@ class Vocabulary:
 class Labels:
     # Mirror of Vocabulary for Labels
     def __init__(self):
-        self.vocab_len = 0
-        self.word_to_idx: Dict = {}
-        self.idx_to_word = {}
+        self.labels_len = 0
+        self.tag_to_idx: Dict = {}
+        self.idx_to_tag = {}
         self.load_from_dir()
 
     def load_from_dir(self):
-        """
-        Loads vocabulary tokens directly from file
-        """
+        # Loads vocabulary tokens directly from file
         labels = "labels.txt"
         cwd = Path().resolve()
-        vocab_dir = Path.joinpath(cwd, "vocab")
-        with open(Path.joinpath(vocab_dir, labels)) as l:
+        labels_dir = Path.joinpath(cwd, "vocab")
+        with open(Path.joinpath(labels_dir, labels)) as l:
             for line in l:
                 self.add_word(line.split("\n")[0])
 
     def add_word(self, word: str):
-        if word in self.word_to_idx:
-            logging.log(logging.WARN, "Word: [%s] already in vocab" % word)
+        if word in self.tag_to_idx:
+            logging.log(logging.WARN, "Tag: [%s] already in tags" % word)
         else:
-            self.idx_to_word[self.vocab_len] = word
-            self.word_to_idx[word] = self.vocab_len
-            self.vocab_len = self.vocab_len + 1
+            self.idx_to_tag[self.labels_len] = word
+            self.tag_to_idx[word] = self.labels_len
+            self.labels_len = self.labels_len + 1
 
     def get_word_from_index(self, index: int):
-        assert(index < self.vocab_len)
-        return self.idx_to_word[index]
+        assert(index < self.labels_len)
+        return self.idx_to_tag[index]
 
 
     def get_index_from_word(self, word: str):
         assert(isinstance(word, str))
-        return self.word_to_idx[word] if word in self.word_to_idx else \
-            self.word_to_idx["O"]
+        return self.tag_to_idx[word] if word in self.tag_to_idx else \
+            self.tag_to_idx["O"]
 
 
 class Preprocessor:
@@ -126,10 +121,10 @@ class Preprocessor:
 
     def vectorize_sentence(self, sentence: str) -> List[Dict]:
         """
-        Indexes sentence with given vocab to produce sentence vector (np.array)
-        Binarized vector indicating position of predicate (np.array)
+        Tokenizes and indexes sentences based on given vocabulary
+        Returns:
+            Dictionary of sent_vec (token indexes) and pred_vec (one-hot encoded)
         """
-
         paired = self._pair_sentence_pred(sentence)
         vectorized_instances: List[Dict] = []
         for sent_pred_pair in paired:
@@ -141,12 +136,13 @@ class Preprocessor:
         return vectorized_instances
 
 
-    def vectorize_tokens(self, tokens: List, tags: List) -> List[Dict]:
+    def vectorize_token_tags(self, tokens: List, tags: List) -> List[Dict]:
         """
         For training purposes, tokenization is ommitted: assume training data has
         to have tagged tokenized input
-        Indexes sentence with given vocab to produce sentence vector (np.array)
-        Binarized vector indicating position of predicate (np.array)
+        Returns:
+            Dictionary of sent_vec (token indexes), pred_vec (one-hot encoded)
+            and tags_vec (tag indexes)
         """
         assert(len(tokens) == len(tags))
         pred_index = tags.index("B-V") # Take Beginning of verb as predicate index
@@ -161,6 +157,12 @@ class Preprocessor:
     def pad_batch(self, batch_instances: List[Dict]):
         """
         Pads all sentences to the maximum length of the batch to facilitate padding packed sequence
+        During training, tags are likewise padded
+        Arguments:
+            batch_instances: List of (Dict containing indexes of tokens, one-hot encoded predicate,
+                                       tags_vector [Optional])
+        Returns:
+            Tensors of input Dict values
         """
         tags_present = "tags_vec" in batch_instances[0]
         batch_size = len(batch_instances)

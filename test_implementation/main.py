@@ -4,15 +4,16 @@ model_config = {
     "input_size": 200,
     "hidden_size": 300,
     "highway": True,
-    "dropout": 0.2,
+    "dropout": 0.2, # Irrelevant for now
     "embedding_dim": 100,
     "layers": 8,
     "num_classes": 62
 }
 
+
 training_config = {
     "epochs": 5,
-    "batch_size": 20,
+    "batch_size": 1,
     "learning_rate": 0.01,
 }
 

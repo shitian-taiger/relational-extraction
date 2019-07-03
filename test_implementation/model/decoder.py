@@ -4,7 +4,9 @@ from model.utils import *
 
 class Decoder:
     """
-    As implemented in ALLEN
+    As implemented in ALLEN:
+    Viterbi Decoding (HMM) of tags, disallowing stray I-tags without prior B-tags
+    Purely used for prediction purposes, is not applicable to loss calculation and model training
     """
 
     def __init__(self, vocab: Vocabulary, labels: Labels):
@@ -12,8 +14,6 @@ class Decoder:
         self.vocab = vocab
 
     def decode(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        """
-        """
         all_predictions = output_dict['class_probabilities']
         sequence_lengths = self.get_lengths_from_binary_sequence_mask(output_dict["mask"]).data.tolist()
 
@@ -43,7 +43,7 @@ class Decoder:
         transition_matrix : torch.Tensor
             A (num_labels, num_labels) matrix of pairwise potentials.
         """
-        all_labels = self.labels.idx_to_word
+        all_labels = self.labels.idx_to_tag
         num_labels = len(all_labels)
         transition_matrix = torch.zeros([num_labels, num_labels])
 

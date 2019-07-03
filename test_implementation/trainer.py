@@ -10,6 +10,18 @@ from data_utils import get_tokens_oie
 class Trainer:
 
     def __init__(self, model_config: Dict, training_config=None):
+        """
+        Arguments:
+            model_config : Configuration of model to be trained:
+                -- input_size: LSTM input
+                -- hidden_size: LSTM hidden state
+                -- highway: Highway connections in LSTM
+                -- layers: Number of LSTM layers
+                -- embedding_dim: Dimension of word embedding
+                -- num_classes: Corresponds to output IOB2 tags
+
+            training_config: Training Configurations including batch_size etc
+        """
 
         self.vocab = Vocabulary()
         self.vocab.load_from_dir()
@@ -36,10 +48,9 @@ class Trainer:
         p = Path(__file__).parent.resolve()
         file_dir = Path.joinpath(p.parent, "data/OIE/train.oie.conll")
         for i in range(epochs):
-            i, batch_tokens, batch_tags = 0, [], []
+            batch_tokens, batch_tags = [], []
             for tokens, tags in get_tokens_oie(file_dir):
-                i += 1
-                if i == batch_size and batch_tokens and batch_tags:
+                if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
                     self.optimizer.zero_grad() # Clear optimizer gradients
 
                     model_input = self.preprocess_batch(batch_tokens, batch_tags)
@@ -48,30 +59,50 @@ class Trainer:
                     loss.backward()
                     self.optimizer.step()
 
+                    print(batch_tags)
+                    print(self.decoder.decode(output)["tags"])
+
                     print("Batch loss: {}".format(loss))
-                    i, batch_tokens, batch_tags = 0, [], []
+                    batch_tokens, batch_tags = [], []
 
                 if tokens and tags: # Omit cases where there are empty sentences
                     batch_tokens.append(tokens)
                     batch_tags.append(tags)
 
 
-    def preprocess_batch_tagless(self, tokens_list: List[List]):
-        # Vectorize pairs to: {'sent_vec': [index of word in vocab], 'pred_vec': [binarized]}
+    def preprocess_batch_tagless(self, sentence: List[str]):
+        """
+        Preprocessing for sentences, purely for prediction purposes, tags not required
+        Arguments:
+            sentence: List of string sentences
+        Returns:
+            Dictionary of sentence vector (tensor of token indexes), predicate vector (one-hot),
+            sequence_lengths and sequence mask
+        """
         vectorized_pairs: List[Dict] = []
         for i, sentence in enumerate(sentences):
             vectorized_pair = self.preprocessor.vectorize_sentence(sentence)
             vectorized_pairs += vectorized_pair
         sents, preds, lens, mask = self.preprocessor.pad_batch(vectorized_pairs)
-        return { "sent_vec": sents.long(), "pred_vec": preds.long(), "lengths": lens, "mask": mask }
+        return { "sent_vec": sents.long(), "pred_vec": preds.long(),
+                 "lengths": lens, "mask": mask }
 
 
     def preprocess_batch(self, tokens_list: List[List], tags_list: List[List]):
-        # Vectorize pairs to: {'sent_vec': [index of word in vocab], 'pred_vec': [binarized]}
+        """
+        Preprocessing for tokens and tags for training
+        Arguments:
+            tokens_list: List of (List of string words)
+            tags_list: List of (List of string tags)
+        Returns:
+            Dictionary of sentence vector (token indexes), predicate vector (one-hot),
+            sequence_lengths and sequence mask and tags vector (tag indexes)
+        """
+        assert(len(tokens_list) == len(tags_list))
         vectorized_list: List[Dict] = []
         for i, tokens in enumerate(tokens_list):
             tags = tags_list[i]
-            vectorized: List[Dict] = self.preprocessor.vectorize_tokens(tokens, tags)
+            vectorized: List[Dict] = self.preprocessor.vectorize_token_tags(tokens, tags)
             vectorized_list += vectorized
         sents, preds, lens, mask, tags = self.preprocessor.pad_batch(vectorized_list)
         return { "sent_vec": sents.long(), "pred_vec": preds.long(),

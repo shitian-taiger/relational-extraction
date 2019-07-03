@@ -124,18 +124,11 @@ class REModel(torch.nn.Module):
         # Sort and pack padded sequence
         packed, original_order = self.sort_and_pack_embeddings(full_embeddings, input_dict["lengths"])
 
-        # TODO Why do we need to store final states?
-        final_states = []
-
         hidden_states = [None] * len(self.lstm_layers)
         output_sequence: PackedSequence = packed
         for i, state in enumerate(hidden_states):
             layer = self.lstm_layers[i]
-            output_sequence, final_state = layer(output_sequence, state)
-            final_states.append(final_state)
-
-        # TODO Why do we need to store final states
-        final_hidden_state, final_cell_state = tuple(torch.cat(state_list, 0) for state_list in zip(*final_states))
+            output_sequence, _ = layer(output_sequence, state) # Ignore final state of lstm layer
 
         output_tensors = self.unpack_and_reorder(output_sequence, original_order)
         output_dict = self.get_output_dict(output_tensors, input_dict["mask"]) # Class probabilities to be decoded
@@ -147,9 +140,9 @@ class REModel(torch.nn.Module):
         return output_dict
 
 
-    def compute_loss(self, logits: Tensor, tags: Tensor, mask: Tensor):
+    def compute_loss(self, logits: Tensor, tags: Tensor, mask: Tensor) -> Tensor:
         """
-        Custom loss computation
+        Computes log-softmax loss, mask is required for omitting of padding for variable length sequences
         """
         logits_flat = logits.view(-1, logits.size(-1)) # (batch * sequence_length, num_classes)
         log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=-1) # (batch * sequence_length, num_classes)

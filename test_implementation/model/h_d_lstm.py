@@ -119,7 +119,6 @@ class CustomLSTM(torch.nn.Module):
 
         output_accumulator = pack_padded_sequence(output_accumulator, batch_lengths, batch_first=True)
 
-        # TODO Understand why this is required (or not)
         # Mimic the pytorch API by returning state in the following shape:
         # (num_layers * num_directions, batch_size, hidden_size). As this
         # LSTM cannot be stacked, the first dimension here is just 1.
