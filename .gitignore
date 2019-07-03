@@ -8,3 +8,6 @@ generation/archived_models
 test_implementation/glove.6B
 test_implementation/vocab
 test_implementation/weights
+frontend-app/node_modules/
+frontend-app/package-lock.json
+frontend-app/.gitignore
