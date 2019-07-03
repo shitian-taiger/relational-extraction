@@ -52,7 +52,15 @@ def reorder_argtags(tags: List[str]):
 
 
 def get_tokens_oie(file_path: str):
+    """
+    Get tokens of the format (tab separated columns):
+    word_id | word | pred | pred_id | head_pred_id | sent_id | run_id | label
+        - word_id: token index in sentence
+        - word: token
+        - label: To be formatted to IOB-2 format if not already
+    """
     df = pd.read_csv(file_path, sep="\t")
+    df = df[pd.notnull(df['word'])] # Remove entries containing null
     tokens, tags = [], []
     for _, row in df.iterrows():
         token = row['word']
