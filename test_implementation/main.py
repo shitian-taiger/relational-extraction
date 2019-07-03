@@ -13,7 +13,7 @@ model_config = {
 
 training_config = {
     "epochs": 5,
-    "batch_size": 1,
+    "batch_size": 20,
     "learning_rate": 0.01,
 }
 
