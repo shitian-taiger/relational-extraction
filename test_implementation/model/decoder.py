@@ -1,6 +1,6 @@
 import torch
 from typing import Dict, List, Optional
-from model.utils import *
+from .utils import *
 
 class Decoder:
     """

@@ -1,5 +1,5 @@
 from pathlib import Path
-from trainer import Trainer
+from .trainer import Trainer
 
 p = Path(__file__).parent.resolve()
 
@@ -30,7 +30,7 @@ sentences = [
     "These reports were later denied by a high Brazilian official, who said Brazil wasn't involved in any coffee discussions on quotas, the analyst said.",
     ]
 
-trainer = Trainer(model_config, training_config)
+# trainer = Trainer(model_config, training_config)
 # trainer.train()
-for sentence in sentences:
-    print(trainer.predict(sentence))
+# for sentence in sentences:
+#     print(trainer.predict(sentence))

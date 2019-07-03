@@ -3,11 +3,11 @@ import torch
 from torch.nn.utils.rnn import pack_padded_sequence
 
 from typing import Tuple, Dict, List
-from model.decoder import Decoder
-from model.model import REModel
-from model.utils import *
+from .model.decoder import Decoder
+from .model.model import REModel
+from .model.utils import *
 
-from data_utils import get_tokens_oie
+from .data_utils import get_tokens_oie
 
 class Trainer:
 
@@ -66,7 +66,6 @@ class Trainer:
                 if tokens and tags: # Omit cases where there are empty sentences
                     batch_tokens.append(tokens)
                     batch_tags.append(tags)
-
 
 
     def predict(self, sentence: str):

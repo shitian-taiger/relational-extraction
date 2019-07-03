@@ -18,7 +18,7 @@ class REModel(torch.nn.Module):
 
 
     def _load_embeddings(self, num_embeddings, embedding_dim):
-        cwd = Path().resolve()
+        cwd = Path(__file__).parent.parent
         token_emb_weights = torch.load(Path.joinpath(cwd, "weights/token_embedder"))
         verb_emb_weights = torch.load(Path.joinpath(cwd, "weights/verb_embedder"))
         self.token_embedding = torch.nn.Embedding(num_embeddings, embedding_dim,
@@ -43,7 +43,7 @@ class REModel(torch.nn.Module):
 
 
     def _load_layer_weights(self, layer: CustomLSTM, layer_num: int):
-        cwd = Path().resolve()
+        cwd = Path(__file__).parent.parent
         input_weights: Tensor = torch.load(Path.joinpath(cwd, "weights/layer{}_input_weight".format(layer_num)))
         input_bias: Tensor = torch.load(Path.joinpath(cwd, "weights/layer{}_input_bias".format(layer_num)))
         state_weights: Tensor = torch.load(Path.joinpath(cwd, "weights/layer{}_state_weight".format(layer_num)))
@@ -55,7 +55,7 @@ class REModel(torch.nn.Module):
 
 
     def _load_tag_layer(self):
-        cwd = Path().resolve()
+        cwd = Path(__file__).parent.parent
         tag_layer_weights: Tensor = torch.load(Path.joinpath(cwd, "weights/tag_layer_weights"))
         tag_layer_bias: Tensor = torch.load(Path.joinpath(cwd, "weights/tag_layer_bias"))
         self.tag_layer = torch.nn.Linear(self.config["hidden_size"], self.config["num_classes"])

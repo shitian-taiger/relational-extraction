@@ -55,7 +55,7 @@ class Vocabulary:
     def load_from_dir(self):
         # Loads vocabulary tokens directly from file
         tokens = "tokens.txt"
-        cwd = Path().resolve()
+        cwd = Path(__file__).parent.parent
         vocab_dir = Path.joinpath(cwd, "vocab")
         with open(Path.joinpath(vocab_dir, tokens)) as v:
             for line in v:
@@ -86,7 +86,7 @@ class Labels:
     def load_from_dir(self):
         # Loads vocabulary tokens directly from file
         labels = "labels.txt"
-        cwd = Path().resolve()
+        cwd = Path(__file__).parent.parent
         labels_dir = Path.joinpath(cwd, "vocab")
         with open(Path.joinpath(labels_dir, labels)) as l:
             for line in l:
