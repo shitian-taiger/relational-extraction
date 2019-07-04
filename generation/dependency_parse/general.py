@@ -134,6 +134,9 @@ def get_noun_phrase(noun: Dict, proper_noun=False) -> str:
     """
     if not noun.get("children"):
         return noun["word"]
+    elif DPHelper.has_possessor(noun) and proper_noun: # Special cases such as XXX's barracks
+        possessor_noun = get_noun_phrase(DPHelper.get_possessor(noun), proper_noun=True)
+        return (possessor_noun + " " + noun["word"])
     else:
         full = ""
         for child in noun["children"]:

@@ -36,6 +36,25 @@ def get_sentences_oie(file_path: str):
                 sentence = " ".join([sentence, word])
 
 
+def get_phrase(words: List[str]):
+    phrase = ""
+    hyphen_dollar = False
+    for word in words:
+        if hyphen_dollar or word in punctuation or re.match("'.", word) or re.match("n't", word):
+            if word == '$':
+                phrase = " ".join([phrase, word])
+                hyphen_dollar = True
+            elif word == '-':
+                hyphen_dollar = True
+                phrase = "".join([phrase, word])
+            else:
+                hyphen_dollar = False
+                phrase = "".join([phrase, word])
+        else:
+            phrase = " ".join([phrase, word]) if phrase else "".join([phrase, word])
+    return phrase
+
+
 def get_sentences_ent_rel(file_path: str):
     with open(file_path, "r") as f:
         for line in f:

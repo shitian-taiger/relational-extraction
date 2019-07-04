@@ -34,7 +34,9 @@ test_sentences = [
     "After a decade of private practice, Peckham served as the Albany district attorney from 1869 to 1872.",
     "Peckham then returned to private legal practice and served as counsel to the City of Albany, until being elected as a trial judge on the New York Supreme Court in 1883.", # TODO (Special x-y)
     "In 1886, Peckham was elected to the New York Court of Appeals, the highest court in the state.",
-    "This was the third position that Peckham had held after his father, who had also served as the Albany D.A., on the New York Supreme Court, and finally on the Court of Appeals until his death in the 1873 Ville du Havre sinking."
+    "This was the third position that Peckham had held after his father, who had also served as the Albany D.A., on the New York Supreme Court, and finally on the Court of Appeals until his death in the 1873 Ville du Havre sinking.",
+    "Lillian Lux died at St. Vincent 's hospital in Manhattan.",
+    "Lillian Lux, the Matriarch of YiThFa, a celebrated yiddish theatrical family, died on saturday at St. Vincent's hospital in Manhattan."
     ]
 
 
@@ -46,7 +48,7 @@ if __name__ == "__main__":
 
     dep_parse = DepParse()
 
-    for sentence in sentences:
+    for sentence in test_sentences:
         root = dep_parse.get_tree(sentence)
         print("\n%s" % sentence)
         results = generate(root)

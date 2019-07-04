@@ -137,6 +137,17 @@ def vbroot_subj(root: Dict):
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
 
+        # Possessive object can be part of proper noun such as XXX Hospital
+        if DPHelper.has_possessor(pred_obj):
+            aux_relations.append([root["word"]])
+            objs.append([get_noun_phrase(pred_obj, proper_noun=True)])
+            # Find nested `in` predicate objects referring to the same subj-rel
+            pobj_objs = get_nested_in_pobjs(pred_obj)
+            if pobj_objs:
+                objs.append(pobj_objs)
+                aux_relations.append([root["word"]])
+
+
         if prep["word"].istitle(): # We assume this phrase came before subject, nonetheless referring to root subject FIXME Hacky, please verify
             nested_prep_relation = recursive_prep_search(pred_obj)
             if nested_prep_relation:
