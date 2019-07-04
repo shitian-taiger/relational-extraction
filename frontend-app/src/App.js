@@ -2,7 +2,7 @@ import React from 'react';
 import './App.css';
 import Predictor from './Predictor';
 import { Button } from 'semantic-ui-react';
-
+import equal from 'fast-deep-equal';
 
 function App() {
 
@@ -49,18 +49,25 @@ class Results extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
-    let results = this.props.results;
-    // setState here causes an infinite loop
-    this.state.oieResults = results.oie_prediction;
-    this.state.dpResults = results.dp_prediction;
-    this.state.nerOieResults = results.ner_oie_prediction;
-    console.log(this.props)
+    // Required since setState results in inf loop within componentDidUpdate
+    if (!equal(this.props.results, prevProps.results))
+    {
+      this.updatePredictionResults();
+    }
   }
 
+  updatePredictionResults() {
+    let results = this.props.results;
+    this.setState({oieResults: results.oie_prediction});
+    this.setState({dpResults: results.dp_prediction});
+    this.setState({nerOieResults: results.ner_oie_prediction});
+  }
+
+
   getResArray(arr) {
-    let resLines = []
+      let resLines = [];
     for (let i = 0; i < arr.length; i++) {
-      let line = arr[i]
+        let line = arr[i];
       resLines.push(<ResultLine key={i} text={line}/>);
     }
     return resLines;
