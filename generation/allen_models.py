@@ -182,7 +182,7 @@ class NER(AllenModels):
                 entities.append(text)
                 ent_idx_map[text] = (i, i)
             elif reduce(lambda x, y: y in ent_type or x, ["B-", "I-", "L-"], False): # Check for pre-tags
-                curr_entity = " ".join([curr_entity, text])
+                curr_entity = " ".join([curr_entity, text]) if curr_entity else "".join([curr_entity,text])
                 if re.search("B-", ent_type):
                     beg_idx = i
                 elif re.search("I-", ent_type):

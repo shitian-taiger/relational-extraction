@@ -1,15 +1,16 @@
-from utils import get_sentences_oie, get_sentences_ent_rel
 from typing import Tuple, List, Iterator, Dict
-from allen_models import OpenIE, NER
+from .utils import get_sentences_oie, get_sentences_ent_rel, get_phrase
+from .allen_models import OpenIE, NER
 import spacy
 
 PRINT_OIE_TUPLES = False
 PRINT_SENTENCE = True # Only print for questioning sentence validity
 PRINT_NAMED_ENTITIES = False
+CREATE_INSTANCES = False
 
-TEST_SENTENCES = False
+TEST_SENTENCES = True
 OIE_SENTENCES = False
-WIKI_SENTENCES = True
+WIKI_SENTENCES = False
 
 class DataGenerator:
 
@@ -44,14 +45,19 @@ class DataGenerator:
 
         oie_tuples = self.open_ie.get_tuples(sentence) # Get relational tuples from oie extractor, filtered conditionally
 
+        filtered_rel_tuples = []
         concat_instances = ""
         for rel_tuple in oie_tuples:
             arg1, arg2 = rel_tuple[0], rel_tuple[2]
             if self.contains_named_entity(arg1) and self.contains_named_entity(arg2):
-                instances = self.create_instances(rel_tuple)
+                instances, rel_tuples = self.create_instances(rel_tuple)
+                filtered_rel_tuples += rel_tuples
                 concat_instances = "\n".join([concat_instances, instances])
 
-        return concat_instances
+        filtered_rel_tuples = [ (get_phrase(frt[0]),
+                                 get_phrase(frt[1]),
+                                 get_phrase(frt[2])) for frt in filtered_rel_tuples]
+        return concat_instances, filtered_rel_tuples
 
 
     def get_tagged_entities(self, sentence: str):
@@ -118,8 +124,10 @@ class DataGenerator:
             rel_tuple: Tuple of (sub, rel, obj, verb_index)
         Returns:
             instances (str): Formatted instances in string format
+            rel_tuples : Tuples of the format (NE, rel, NE)
         """
         instances = ""
+        rel_tuples = []
         sub, obj, rel_idx = rel_tuple[0], rel_tuple[2], rel_tuple[3]
 
         assert(rel_idx is not None) # Ensure relation index exists for tagging purposes
@@ -136,6 +144,7 @@ class DataGenerator:
                 sub = [self.ent_tagged_sent[i]["text"] for i in range(sub_idx[0], sub_idx[1] + 1)]
                 rel = [self.ent_tagged_sent[i]["text"] for i in range(rel_idx[0], rel_idx[1] + 1)]
                 obj = [self.ent_tagged_sent[i]["text"] for i in range(obj_idx[0], obj_idx[1] + 1)]
+                rel_tuples.append((sub, rel, obj))
                 '''
                 Manual user input
                 '''
@@ -145,20 +154,21 @@ class DataGenerator:
                 if PRINT_OIE_TUPLES:
                     print(" ===================== OIE TUPLE =========================")
                     print(sub, rel, obj)
-                dec = False
-                while not dec:
-                    tag = input("Valid? - [y/n]: %s - %s - %s" % (sub, rel, obj))
-                    if tag == "y":
-                        print("Adding to instances")
-                        instances = "\n".join([instances, self.tag_sentence(sub_idx, obj_idx, rel_idx)])
-                        dec = True
-                    elif tag == "n":
-                        print("Skipping")
-                        dec = True
-                    else:
-                        print("Invalid option")
+                if CREATE_INSTANCES:
+                    dec = False
+                    while not dec:
+                        tag = input("Valid? - [y/n]: %s - %s - %s" % (sub, rel, obj))
+                        if tag == "y":
+                            print("Adding to instances")
+                            instances = "\n".join([instances, self.tag_sentence(sub_idx, obj_idx, rel_idx)])
+                            dec = True
+                        elif tag == "n":
+                            print("Skipping")
+                            dec = True
+                        else:
+                            print("Invalid option")
 
-        return instances
+        return instances, rel_tuples
 
 
     def tag_sentence(self, sub_idx: Tuple, obj_idx: Tuple, rel_idx):
@@ -192,18 +202,20 @@ class DataGenerator:
         return False
 
 
-if __name__ == "__main__":
-    generator = DataGenerator(use_allen = True)
+generator = DataGenerator(use_allen = True)
 
+if __name__ == "__main__":
     if TEST_SENTENCES:
-        sentences = ["Lillian lux, the matriarch of a celebrated yiddish theatrical family who performed for decades as an actress and singer in New York and around the world, died on saturday at St. Vincent's hospital in Manhattan.",
+        sentences = ["Lillian Lux, the matriarch of a celebrated yiddish theatrical family who performed for decades as an actress and singer in New York and around the world, died on saturday at St. Vincent's hospital in Manhattan.",
                     "Courtalds' spinoff reflects pressure on British industry to boost share prices beyond the reach of corporate raiders.",
                     "In 1971 , the FDA banned the use of Amphetamines after studies linked it to cancer and other problems in daughters of women who took the drug.",
                     "Deva has moved to Mumbai and has is residing at Boney Kapoor's old place called Green Acres.",
-                     "In London, prices finished at intraday peaks, comforted by a reassuring early performance on Wall Street and news that the British government will waive its `` golden share'' in auto maker Jaguar."
+                        "In London, prices finished at intraday peaks, comforted by a reassuring early performance on Wall Street and news that the British government will waive its `` golden share'' in auto maker Jaguar.",
+                        "Lillian lux died at St. Vincent 's hospital in Manhattan."
                     ]
+        for sentence in sentences:
+            generator.generate(sentence)
         sentence = sentences[4]
-        generator.generate(sentence)
 
     if OIE_SENTENCES:
         with open("./generated.txt", "a+") as f:
