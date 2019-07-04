@@ -1,6 +1,6 @@
 import React from 'react';
 import './App.css';
-import Predictor from './Predictor'
+import Predictor from './Predictor';
 
 
 function App() {
@@ -14,3 +14,20 @@ function App() {
 }
 
 export default App;
+
+
+class Span extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      text: props["text"]
+    };
+  }
+
+  render() {
+    return (
+        <span>{this.state.text}</span>
+    );
+  }
+}
+
