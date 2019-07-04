@@ -31,3 +31,16 @@
     transform: rotate(360deg);
   }
 }
+
+.Predictor-Header {
+    font-size: 30px;
+    margin: 10px;
+}
+
+.SentenceInput-Label {
+    margin: 10px;
+}
+
+.SentenceInput-Text {
+    width: 600px;
+}
