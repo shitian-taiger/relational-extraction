@@ -17,20 +17,23 @@ class Predictor extends React.Component {
     return (
       <div className="Predictor">
         <div className="Predictor-Header"> Relational Extraction </div>
-        <SentenceInput/>
+        <SentenceInput onResultReceived={this.resultReceived}/>
       </div>
     );
   };
+
+  resultReceived = (result) => {
+    this.props.onResultReceived(result);
+  }
+
 }
 
 class SentenceInput extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { sentence: "Mary is Harry's friend.",
-                   oie_predict_url: "http://127.0.0.1:8000/predict/oie",
+    this.state = { sentence: "Lex Luthor, who was an actress and singer in New York and around the world, died on saturday at St. Vincent's hospital in Manhattan.",
+                   oie_predict_url: "http://127.0.0.1:8000/predict/all",
                    oie_results: [],
-                   dp_predict_url: "http://127.0.0.1:8000/predict/dep_parse",
-                   dp_results: [],
                  };
 
     this.handleChange = this.handleChange.bind(this);
@@ -39,20 +42,13 @@ class SentenceInput extends React.Component {
 
   handleChange(event) {
     this.setState({sentence: event.target.value});
-    console.log(this.state.sentence);
   }
 
   handleSubmit(event) {
 
     event.preventDefault();
     fetcher(this.state.oie_predict_url, this.state.sentence)
-      .then((res) => this.state.oie_results = res);
-
-    fetcher(this.state.dp_predict_url, this.state.sentence)
-      .then((res) => this.state.dp_results = res);
-
-    console.log(this.state.oie_results);
-    console.log(this.state.dp_results);
+      .then((res) => this.props.onResultReceived(res));
 
   }
 
