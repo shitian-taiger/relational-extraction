@@ -90,5 +90,9 @@ def generate(root: Dict):
         if DPHelper.is_proper_noun(root):
             subj, relations, obj = nnproot(root)
 
-    return relations
+    all_rel_tuples = []
+    for relation in relations:
+        rel_tuples = [(sub, relation['relation'], obj) for sub in relation['subjs'] for obj in relation['objs']]
+        all_rel_tuples += rel_tuples
+    return all_rel_tuples
 

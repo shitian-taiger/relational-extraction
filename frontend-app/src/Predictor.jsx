@@ -25,7 +25,6 @@ class Predictor extends React.Component {
   resultReceived = (result) => {
     this.props.onResultReceived(result);
   }
-
 }
 
 class SentenceInput extends React.Component {
