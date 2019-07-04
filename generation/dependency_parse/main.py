@@ -18,6 +18,7 @@ def generate(root: Dict):
     subj = DPHelper.get_subject(root)
     obj = DPHelper.get_object(root)
 
+
     if subj is not None and DPHelper.is_proper_noun(subj) and \
        obj is not None and DPHelper.is_proper_noun(obj):
 

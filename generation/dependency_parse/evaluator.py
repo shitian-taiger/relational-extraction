@@ -86,9 +86,15 @@ def nnroot_subj(root: Dict):
                        |
     '''
     relations = [root["word"]]
+
+    objs = []
+    # Direct possessor relation between nominal subject root noun possessor
+    if DPHelper.is_noun(root) and DPHelper.has_possessor(root):
+        objs = objs + get_all_nouns(DPHelper.get_possessor(root), proper_noun=True)
+
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
-        objs: List[Dict] = [] # Actual Named entity to find
+        objs: List[Dict] = [] # Actual Named entity to find (Assume no root noun possessor)
 
         if DPHelper.is_proper_noun(pred_obj):
             objs = objs + get_all_nouns(pred_obj, proper_noun=True) # Possibility of multiple conjuncting proper

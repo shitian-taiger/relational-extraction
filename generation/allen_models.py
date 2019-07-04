@@ -2,23 +2,25 @@ import logging
 import re
 import os
 import urllib
+from pathlib import Path
 from functools import reduce
 from typing import Tuple, Dict, List
 from allennlp.predictors.predictor import Predictor
 from allennlp.models.archival import Archive, load_archive
 
+cwd = Path(__file__).parent
 model_configs = {
     "open-information-extraction": {
         "reference": "https://www.semanticscholar.org/paper/Supervised-Open-Information-Extraction-Stanovsky-Michael/6fc991dbc1714b425d11b4de3d9d247d21d77c0b",
-        "model_path": "./archived_models/openie-model.2018-08-20.tar.gz",
+        "model_path": Path.joinpath(cwd, "archived_models/openie-model.2018-08-20.tar.gz"),
         "model_url": "https://s3-us-west-2.amazonaws.com/allennlp/models/openie-model.2018-08-20.tar.gz"
     },
     "named-entity-recognition": {
-        "model_path": "./archived_models/ner-model.2018-12-18.tar.gz",
+        "model_path": Path.joinpath(cwd, "./archived_models/ner-model.2018-12-18.tar.gz"),
         "model_url": "https://s3-us-west-2.amazonaws.com/allennlp/models/ner-model-2018.12.18.tar.gz"
     },
     "dependency-parsing": {
-        "model_path": "./archived_models/biaffine-dependency-parser-ptb-2018.08.23.tar.gz",
+        "model_path": Path.joinpath(cwd, "./archived_models/biaffine-dependency-parser-ptb-2018.08.23.tar.gz"),
         "model_url": "https://s3-us-west-2.amazonaws.com/allennlp/models/biaffine-dependency-parser-ptb-2018.08.23.tar.gz"
     },
 }
@@ -48,7 +50,8 @@ class AllenModels:
         Returns:
             predictor : Dependent on type of model
         """
-        if not os.path.isdir("./archived_models"):
+        cwd = Path(__file__).parent
+        if not os.path.isdir(Path.joinpath(cwd, "archived_models")):
             os.mkdir("./archived_models")
         if not os.path.isfile(self.model_path):
             print("Downloading archived model for %s" % self.model_name)
