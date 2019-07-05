@@ -4,7 +4,7 @@ from .allen_models import OpenIE, NER
 import spacy
 
 PRINT_OIE_TUPLES = False
-PRINT_SENTENCE = True # Only print for questioning sentence validity
+PRINT_SENTENCE = False # Only print for questioning sentence validity
 PRINT_NAMED_ENTITIES = False
 CREATE_INSTANCES = False
 

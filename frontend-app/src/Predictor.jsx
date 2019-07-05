@@ -23,7 +23,7 @@ class Predictor extends React.Component {
   };
 
   resultReceived = (result) => {
-    this.props.onResultReceived(result);
+    this.props.onPredictionResult(result);
   }
 }
 

@@ -26,14 +26,21 @@ class Base extends React.Component {
   render() {
     return (
       <div className="App">
-        <Predictor onResultReceived={this.resultReceived}/>
-        <Results results={this.state.predictedResults}/>
+        {/* Pass onPredictionResult prop to Predictor for callback on retrieval */}
+        <Predictor onPredictionResult={this.resultReceived}/>
+        {/* Pass onValidated prop to Results for callback on user validation of results */}
+        <Results onValidated={this.validationReceived}
+                 results={this.state.predictedResults}/>
       </div>
     );
   }
 
-  resultReceived = (result) => {
-    this.setState({predictedResults: result});
+  resultReceived = (predictionResults) => {
+    this.setState({predictedResults: predictionResults});
+  }
+
+  validationReceived = (validationResult) => {
+    console.log(validationResult);
   }
 }
 

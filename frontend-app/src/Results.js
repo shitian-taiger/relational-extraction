@@ -8,39 +8,81 @@ class Results extends React.Component {
     this.state = {
       oieResults: [],
       dpResults: [],
-      nerOieResults: []
+      nerOieResults: [],
+      // Bitwise validity for user input
+      validity: {oie: [], dp: [], nerOie: []}
     };
   }
 
+  // Updating of Prediction Results: Set result array and instantiate validity index
   componentDidUpdate(prevProps, prevState, snapshot) {
     // Required since setState results in inf loop within componentDidUpdate
     if (!equal(this.props.results, prevProps.results)) {
       this.updatePredictionResults();
     }
   }
-
   updatePredictionResults() {
     let results = this.props.results;
-    this.setState({oieResults: results.oie_prediction});
-    this.setState({dpResults: results.dp_prediction});
-    this.setState({nerOieResults: results.ner_oie_prediction});
+    this.setState({
+      oieResults: results.oie_prediction,
+      dpResults: results.dp_prediction,
+      nerOieResults: results.ner_oie_prediction,
+      validity: {
+        oie: results.oie_prediction.map(x => 0),
+        dp: results.dp_prediction.map(x => 0),
+        nerOie: results.ner_oie_prediction.map(x => 0)
+      }
+    });
   }
 
-
-  getResArray(arr) {
+  // Process each prediction type (Array of tuples) into ResultLine(TableRow)
+  getResArray(predictionType, arr) {
     let resLines = [];
     for (let i = 0; i < arr.length; i++) {
-        let line = arr[i];
-      resLines.push(<ResultLine key={i} text={line}/>);
+      let line = arr[i];
+      resLines.push(<ResultLine
+                    pType={predictionType}
+                    key={i} // Each child in list requires unique key, not accessible in props
+                    index={i}
+                    text={line}
+                    validateInstance={this.instanceValidation}/>);
     }
     return resLines;
   }
 
-  render() {
-    let oieResLines = this.getResArray(this.state.oieResults);
-    let oieDPLines = this.getResArray(this.state.dpResults);
-    let oieNerResLines = this.getResArray(this.state.nerOieResults);
+  /** To be called by ResultLine child class, result should contain:
+      pType : Prediction Type
+      index : Index of instance within prediction type
+      validity : Whether instance is valid
+     */
+  instanceValidation = (result) => {
+    if (result.pType === "OIE") {
+      this.state.validity.oie[result.index] = (result.validity) ? 1 : 0;
+    } else if (result.pType === "DP") {
+      this.state.validity.dp[result.index] = (result.validity) ? 1 : 0;
+    } else if (result.pType === "NER-OIE") {
+      this.state.validity.nerOie[result.index] = (result.validity) ? 1 : 0;
+    } else {
+      console.log("Setting validity of invalid prediction type");
+      throw("Invalid");
+    }
+  }
 
+  // Pass validations to parent Base
+  confirmValidations() {
+    if (this.state.oieResults.length == 0 &&
+        this.state.nerOieResults.length == 0 &&
+        this.state.dpResults.length == 0) {
+      alert("Please process a valid sentence");
+      }
+    this.props.onValidated(this.state.validity);
+  }
+
+
+  render() {
+    let oieResLines = this.getResArray("OIE", this.state.oieResults);
+    let dPLines = this.getResArray("DP", this.state.dpResults);
+    let oieNerResLines = this.getResArray("NER-OIE", this.state.nerOieResults);
     return (
       <div className="Results">
         <div className="Results-Header"> Predicted Results </div>
@@ -61,9 +103,12 @@ class Results extends React.Component {
         <div className="Results-Subheader"> DP Results </div>
         <Table className="Results-Table">
           <Table.Body>
-            {oieDPLines}
+            {dPLines}
           </Table.Body>
         </Table>
+        <Button onClick={() => this.confirmValidations()}>
+          Confirm Validations
+        </Button>
       </div>
     );
   }
@@ -74,16 +119,17 @@ class ResultLine extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      predictionType: props.pType,
+      index: props.index,
       arg1: props.text[0],
       rel: props.text[1],
       arg2: props.text[2],
       valid: false,
-      buttonText: "Make Valid",
+      buttonText: "Validate",
     };
   }
 
   componentWillReceiveProps(nextProps) {
-    console.log(nextProps);
     this.updateArguments(nextProps);
   }
 
@@ -94,16 +140,23 @@ class ResultLine extends React.Component {
       rel: res.text[1],
       arg2: res.text[2],
       valid: false,
-      buttonText: "Make Valid",
+      buttonText: "Validate",
     });
   }
 
+  // Handle the setting of validity here, also pass validity to parent
   setValidity() {
-    // Handle the setting of validity here, also pass validity to parent
-    let bText = (this.state.valid) ? "Valid" : "Discard";
+    let newValidity = this.state.valid ? false : true
+    let bText = (newValidity) ? "Discard" : "Validate";
     this.setState({
-      valid: (this.state.valid) ? false : true,
+      valid: newValidity,
       buttonText: bText
+    });
+    // Pass instance validity to parent
+    this.props.validateInstance({
+      pType: this.state.predictionType,
+      index: this.state.index,
+      validity: newValidity
     });
   }
 
