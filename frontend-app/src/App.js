@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import Predictor from './Predictor';
-import { Button } from 'semantic-ui-react';
+import { Button, Table } from 'semantic-ui-react';
 import equal from 'fast-deep-equal';
 
 function App() {
@@ -68,6 +68,7 @@ class Results extends React.Component {
       let resLines = [];
     for (let i = 0; i < arr.length; i++) {
         let line = arr[i];
+      // resLines.push(<ResultLine key={i} text={line}/>);
       resLines.push(<ResultLine key={i} text={line}/>);
     }
     return resLines;
@@ -81,18 +82,26 @@ class Results extends React.Component {
     return (
       <div className="Results">
         <div className="Results-Header"> Predicted Results </div>
-        <div className="Results-Subheader">
-          OIE Results
-          {oieResLines}
-        </div>
-        <div className="Results-Subheader">
-          NER-OIE Results
-          {oieNerResLines}
-        </div>
-        <div className="Results-Subheader">
-          DP Results
-          {oieDPLines}
-        </div>
+        <div className="Results-Subheader"> OIE Results </div>
+        <Table className="Results-Table">
+          <Table.Body>
+            {oieResLines}
+          </Table.Body>
+        </Table>
+
+        <div className="Results-Subheader"> NER-OIE Results </div>
+        <Table className="Results-Table">
+          <Table.Body>
+            {oieNerResLines}
+          </Table.Body>
+        </Table>
+
+        <div className="Results-Subheader"> DP Results </div>
+        <Table className="Results-Table">
+          <Table.Body>
+            {oieDPLines}
+          </Table.Body>
+        </Table>
       </div>
     );
   }
@@ -106,20 +115,35 @@ class ResultLine extends React.Component {
       arg1: props.text[0],
       rel: props.text[1],
       arg2: props.text[2],
-    }
+      valid: false,
+      buttonText: "Valid",
+    };
+  }
+
+  setValidity() {
+    // Handle the setting of validity here, also pass validity to parent
+    let bText = (this.state.valid) ? "Valid" : "Discard";
+    this.setState({
+      valid: (this.state.valid) ? false : true,
+      buttonText: bText
+    });
   }
 
   render() {
     return (
-      <div className="ResultLine">
-        <Span text={this.state.arg1 + " "}/>
-        <Span text={this.state.rel + " "}/>
-        <Span text={this.state.arg2 + " "}/>
-        <Button>
-          Valid Relation
-        </Button>
-      </div>
-    )
+      <Table.Row className="ResultLine">
+        <Table.Cell>
+          <Span valid={this.state.valid} text={this.state.arg1}/>
+          <Span valid={this.state.valid} text={this.state.rel}/>
+          <Span valid={this.state.valid} text={this.state.arg2}/>
+        </Table.Cell>
+        <Table.Cell textAlign='right'>
+          <Button onClick={() => this.setValidity()}>
+            {this.state.buttonText}
+          </Button>
+        </Table.Cell>
+      </Table.Row>
+    );
   }
 }
 
@@ -128,13 +152,39 @@ class Span extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      text: props["text"]
+      text: props["text"],
     };
   }
 
+  componentDidMount() {
+    this.updateStyle(false);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    this.updateStyle(nextProps.valid);
+  }
+
+  updateStyle(valid) {
+    if (valid) {
+      this.setState({decoration: {
+        color: "green",
+        fontWeight: "bold",
+        }
+      });
+    } else {
+      this.setState({decoration: {
+          textDecorationLine: "line-through",
+          textDecorationStyle: "solid",
+        }
+      });
+    }
+  };
+
   render() {
     return (
-      <span>{this.state.text}</span>
+      <span style={this.state.decoration} className="Text">
+        {this.state.text}
+      </span>
     );
   }
 }

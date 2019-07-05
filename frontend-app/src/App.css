@@ -16,8 +16,12 @@
 }
 
 .Results {
+    margin: 50px;
     text-align: center;
+    padding-left: 50px;
+    padding-right: 50px;
 }
+
 .Results-Header {
     font-size: 25px;
     margin: 20px;
@@ -30,4 +34,8 @@
 
 .ResultLine {
     margin: 10px;
+}
+
+.Text {
+    margin: 15px;
 }
