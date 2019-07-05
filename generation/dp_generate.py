@@ -36,7 +36,8 @@ test_sentences = [
     "In 1886, Peckham was elected to the New York Court of Appeals, the highest court in the state.",
     "This was the third position that Peckham had held after his father, who had also served as the Albany D.A., on the New York Supreme Court, and finally on the Court of Appeals until his death in the 1873 Ville du Havre sinking.",
     "Lillian Lux died at St. Vincent 's hospital in Manhattan.",
-    "Lillian Lux, the Matriarch of YiThFa, a celebrated yiddish theatrical family, died on saturday at St. Vincent's hospital in Manhattan."
+    "Lillian Lux, the Matriarch of YiThFa, a celebrated yiddish theatrical family, died on saturday at St. Vincent's hospital in Manhattan.",
+    "Harry, an employee of Challenger, was recently married to Maryyane.",
     ]
 
 

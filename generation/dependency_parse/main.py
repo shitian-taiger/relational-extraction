@@ -88,7 +88,7 @@ def generate(root: Dict):
                 logging.log(INFO, "============= RELATIVE CLAUSE MODIFIER PRESENT ===============")
 
         if DPHelper.is_proper_noun(root):
-            subj, relations, obj = nnproot(root)
+            subj, relations, objs = nnproot(root)
 
     all_rel_tuples = []
     for relation in relations:

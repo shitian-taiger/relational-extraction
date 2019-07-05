@@ -4,7 +4,7 @@ from .constants import Relations, POS
 # ========================================= General Methods =================================================
 
 
-def appositional_relations(appos: Dict):
+def pobj_appositional_relations(appos: Dict):
     '''
     -------------------POBJ
                         |

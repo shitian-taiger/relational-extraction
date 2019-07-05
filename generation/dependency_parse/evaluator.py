@@ -50,6 +50,10 @@ def subjpass(root: Dict):
     '''
     relations, objs, appos_rels = [], [], []
 
+    for appos in DPHelper.get_appositional_phrases(DPHelper.get_subject(root)):
+        appos_objs, appos_relations = pobj_appositional_relations(appos)
+        appos_rels.append({"relation": appos_relations, "obj": appos_objs})
+
     root_relations = False # True if predicate has NNP within preposition
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
@@ -64,7 +68,7 @@ def subjpass(root: Dict):
             root_relations = True
             for appos in DPHelper.get_appositional_phrases(pred_obj):
                 # Getting all proper nouns takes care of appositional nouns, deal with appos phrases (non NNP appos) here
-                appos_objs, appos_relations = appositional_relations(appos)
+                appos_objs, appos_relations = pobj_appositional_relations(appos)
                 appos_rels.append({"relation": appos_relations, "obj": appos_objs})
         else:
             continue
@@ -85,7 +89,7 @@ def nnroot_subj(root: Dict):
     NSUBJ ------- ROOT(NN)
                        |
     '''
-    relations = [root["word"]]
+    relations = [get_noun_phrase(root)]
 
     objs = []
     # Direct possessor relation between nominal subject root noun possessor
@@ -203,15 +207,16 @@ def nnproot(root: Dict):
     Root proper noun is passive subject, attempt finding active obj in predicate object of preposition
     '''
     relations = []
+    objs = []
     subj = get_noun_phrase(root, proper_noun=True)
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
         if DPHelper.is_noun(pred_obj):
-            obj = get_noun_phrase(DPHelper.get_possessor(pred_obj), proper_noun=True)
+            objs.append(get_noun_phrase(DPHelper.get_possessor(pred_obj), proper_noun=True))
             relations = relations + [get_noun_phrase(pred_obj)]
         else:
             continue
-    return subj, relations, obj
+    return subj, relations, objs
 
 
 def subjpass_poss(subjpass: Dict):
