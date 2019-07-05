@@ -37,18 +37,24 @@ class SentenceInput extends React.Component {
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleKeyPress = this.handleKeyPress.bind(this);
   }
 
   handleChange(event) {
     this.setState({sentence: event.target.value});
   }
 
+  // Allow `Enter` keypress to simulate button clicking
+  handleKeyPress(target) {
+    if(target.charCode === 13) { // `Enter` keycode
+      fetcher(this.state.oie_predict_url, this.state.sentence)
+        .then((res) => this.props.onResultReceived(res));
+    }
+  }
   handleSubmit(event) {
-
     event.preventDefault();
     fetcher(this.state.oie_predict_url, this.state.sentence)
       .then((res) => this.props.onResultReceived(res));
-
   }
 
   render() {
@@ -58,8 +64,9 @@ class SentenceInput extends React.Component {
           Sentence Input:
         </span>
         <Input className="SentenceInput-Text"
-          placeholder="Enter a sentence"
                focus
+               onKeyPress={this.handleKeyPress}
+               placeholder="Enter a sentence"
                value={this.state.sentence}
                onChange={this.handleChange} />
         <Button onClick={this.handleSubmit} >
