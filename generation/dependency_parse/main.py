@@ -39,7 +39,7 @@ def generate(root: Dict):
 
     elif subj is not None and DPHelper.is_proper_noun(subj):
 
-        # Check for clausal complement for Subj (INDEPENDENT)
+        # TODO Check for clausal complement for Subj (INDEPENDENT)
         if DPHelper.get_child_type(root, Relations.CLAUSAL_COMPLEMENT):
             pass
 
@@ -73,6 +73,11 @@ def generate(root: Dict):
             objs, aux_relations = vbroot_subj(root)
             relations = relations + create_nested_relations(subjs, aux_relations, objs)
 
+        elif DPHelper.is_adjective(root):
+            logging.log(INFO, "============= NNP SUBJECT with ADJ ROOT ===============")
+            subjs = get_all_nouns(subj, proper_noun=True)
+            objs, aux_relations = vbroot_subj(root) # FIXME We assume this is similar to verb root for now
+            relations = relations + create_nested_relations(subjs, aux_relations, objs)
         else:
             logging.log(INFO, "============= NNP SUBJECT with UNKNOWN STRUCTURE ===============")
 

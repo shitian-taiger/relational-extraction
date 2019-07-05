@@ -96,11 +96,12 @@ def get_colon_dep(pobj: Dict) -> List[str]:
 
 
 def get_predicate_object(prep: Dict, assertion=True) -> Dict:
-    # Gets pobj or dobj of prep, assumes only 1 such object (Special cases do exist, in which case not using this for now)
+    # Gets pobj or dobj of prep, assumes only 1 such object
+    # FIXME Use this even for special cases where prep has more than once type of object, defaults to predicate object
     pred_objs = DPHelper.get_child_type(prep, Relations.PREDICATE_OBJECT)
     direct_objs = DPHelper.get_child_type(prep, Relations.DIRECT_OBJECT) # Possibility nonwithstanding
     prep_comp = DPHelper.get_child_type(prep, Relations.PREPOSITIONAL_COMP)
-    assert( (len(pred_objs) + len(direct_objs) + len(prep_comp) == 1) )
+    # assert( (len(pred_objs) + len(direct_objs) + len(prep_comp) == 1) )
     return pred_objs[0] if pred_objs else direct_objs[0] if direct_objs else prep_comp[0]
 
 
@@ -148,6 +149,8 @@ def get_noun_phrase(noun: Dict, proper_noun=False) -> str:
                 continue
             elif child["link"] == Relations.ADJECTIVAL_MODIFIER and not proper_noun:
                 full = child["word"] # FIXME Assume singular adjectival modifiers for now
+            elif child["link"] == Relations.NUMERAL:
+                full = word_join(full, child)
             elif child["link"] == Relations.NOUN:
                 full = word_join(full, child)
             else:
@@ -197,7 +200,9 @@ class DPHelper:
 
     @staticmethod
     def is_proper_noun(word: Dict) -> bool:
-        return word["attributes"][0] == POS.PROPER_NOUN # TODO Find out why there can be multiple attributes
+        # NUMERAL CHECK: E.g. phrase such as `88 years`
+        return DPHelper.get_child_type(word, Relations.NUMERAL) or \
+            word["attributes"][0] == POS.PROPER_NOUN # TODO Find out why there can be multiple attributes
 
     def is_verb(word: Dict) -> bool:
         verb_forms = [
@@ -213,6 +218,10 @@ class DPHelper:
     @staticmethod
     def is_nnp_prep_link(word: Dict):
         return word["link"] == Relations.PREPOSITION and word["word"] == "of"
+
+    @staticmethod
+    def is_adjective(word: Dict):
+        return word["attributes"][0] == POS.ADJECTIVE
 
     @staticmethod
     def has_possessor(word: Dict) -> bool:

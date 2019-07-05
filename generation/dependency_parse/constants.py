@@ -9,6 +9,7 @@ class Relations:
     INDIRECT_OBJECT = "iobj"
     NOMINAL_SUBJECT = "nsubj"
     NOUN = "nn" # noun as part of noun object group
+    NUMERAL = "num"
     TEMPORAL_MODIFIER = "tmod"
     OPEN_CLAUSAL_COMPLEMENT = "xcomp"
     PASSIVE_NOM_SUBJECT = "nsubjpass"
@@ -21,6 +22,7 @@ class Relations:
     UNKNOWN_DEPENDENCY = "dep"
 
 class POS:
+    ADJECTIVE = "JJ"
     CARDINAL_NUMBER = "CD"
     NOUN = "NN"
     NOUN_PLURAL = "NNS"

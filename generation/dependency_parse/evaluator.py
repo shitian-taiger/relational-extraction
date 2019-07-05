@@ -138,6 +138,12 @@ def vbroot_subj(root: Dict):
                        |
     '''
     objs, aux_relations = [], []
+
+    for appos in DPHelper.get_appositional_phrases(DPHelper.get_subject(root)):
+        appos_objs, appos_relations = pobj_appositional_relations(appos)
+        objs.append(appos_objs)
+        aux_relations.append(appos_relations)
+
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
 
@@ -150,7 +156,6 @@ def vbroot_subj(root: Dict):
             if pobj_objs:
                 objs.append(pobj_objs)
                 aux_relations.append([root["word"]])
-
 
         if prep["word"].istitle(): # We assume this phrase came before subject, nonetheless referring to root subject FIXME Hacky, please verify
             nested_prep_relation = recursive_prep_search(pred_obj)

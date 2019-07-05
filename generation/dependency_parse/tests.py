@@ -76,7 +76,7 @@ class TestBasic(unittest.TestCase):
     def test_unknown(self):
         sentences = [
             ("Harry is married to Mary and has two children.",
-             eval("[]")
+             eval("[('Harry', 'married', 'Mary')]")
              )
             ]
         for sentence, relations in sentences:
