@@ -1,5 +1,6 @@
 import React from 'react';
-import { Button, Table } from 'semantic-ui-react';
+import { Input, Button, Table } from 'semantic-ui-react';
+import { ResultLine } from './ResultLine';
 import equal from 'fast-deep-equal';
 
 class Results extends React.Component {
@@ -10,7 +11,8 @@ class Results extends React.Component {
       dpResults: [],
       nerOieResults: [],
       // Bitwise validity for user input
-      validity: {oie: [], dp: [], nerOie: []}
+      validity: {oie: [], dp: [], nerOie: []},
+      userInstances: [],
     };
   }
 
@@ -70,156 +72,113 @@ class Results extends React.Component {
 
   // Pass validations to parent Base
   confirmValidations() {
-    if (this.state.oieResults.length == 0 &&
-        this.state.nerOieResults.length == 0 &&
-        this.state.dpResults.length == 0) {
+    if (this.state.oieResults.length === 0 &&
+        this.state.nerOieResults.length === 0 &&
+        this.state.dpResults.length === 0) {
       alert("Please process a valid sentence");
       }
     this.props.onValidated(this.state.validity);
   }
 
+  // InstanceCreator Helper
+  addInstance = (instance) => {
+    let newInstances = this.state.userInstances.concat([[instance.arg1Input, instance.relInput, instance.arg2Input]]);
+    this.setState({
+      userInstances: newInstances
+    });
+  }
 
   render() {
+    // TODO Don't compute these calculations on every render, move to results retrieval
     let oieResLines = this.getResArray("OIE", this.state.oieResults);
     let dPLines = this.getResArray("DP", this.state.dpResults);
     let oieNerResLines = this.getResArray("NER-OIE", this.state.nerOieResults);
+    let userLines = this.getResArray("USER", this.state.userInstances);
     return (
       <div className="Results">
         <div className="Results-Header"> Predicted Results </div>
         <div className="Results-Subheader"> OIE Results </div>
         <Table className="Results-Table">
-          <Table.Body>
-            {oieResLines}
-          </Table.Body>
+          <Table.Body>{oieResLines}</Table.Body>
         </Table>
 
         <div className="Results-Subheader"> NER-OIE Results </div>
         <Table className="Results-Table">
-          <Table.Body>
-            {oieNerResLines}
-          </Table.Body>
+          <Table.Body>{oieNerResLines}</Table.Body>
         </Table>
 
         <div className="Results-Subheader"> DP Results </div>
         <Table className="Results-Table">
-          <Table.Body>
-            {dPLines}
-          </Table.Body>
+          <Table.Body>{dPLines}</Table.Body>
         </Table>
+
+        <div className="Results-Subheader"> Custom Instances </div>
+        <Table className="Results-Table">
+          <Table.Body>{userLines}</Table.Body>
+        </Table>
+
+        <InstanceCreator instanceCreate={this.addInstance}/>
+
         <Button onClick={() => this.confirmValidations()}>
           Confirm Validations
         </Button>
       </div>
+
     );
   }
 }
 
-
-class ResultLine extends React.Component {
+class InstanceCreator extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      predictionType: props.pType,
-      index: props.index,
-      arg1: props.text[0],
-      rel: props.text[1],
-      arg2: props.text[2],
-      valid: false,
-      buttonText: "Validate",
+      arg1Input: "",
+      relInput: "",
+      arg2Input: "",
     };
+    this.handleArg1Change = this.handleArg1Change.bind(this);
+    this.handleRelChange = this.handleRelChange.bind(this);
+    this.handleArg2Change = this.handleArg2Change.bind(this);
   }
 
-  componentWillReceiveProps(nextProps) {
-    this.updateArguments(nextProps);
+  handleArg1Change(event) {
+    this.setState({arg1Input: event.target.value});
+  }
+  handleRelChange(event) {
+    this.setState({relInput: event.target.value});
+  }
+  handleArg2Change(event) {
+    this.setState({arg2Input: event.target.value});
   }
 
-  // Indicates new sentence has been predicted
-  updateArguments(res) {
+  addInstance() {
+    this.props.instanceCreate(this.state);
     this.setState({
-      arg1: res.text[0],
-      rel: res.text[1],
-      arg2: res.text[2],
-      valid: false,
-      buttonText: "Validate",
-    });
-  }
-
-  // Handle the setting of validity here, also pass validity to parent
-  setValidity() {
-    let newValidity = this.state.valid ? false : true
-    let bText = (newValidity) ? "Discard" : "Validate";
-    this.setState({
-      valid: newValidity,
-      buttonText: bText
-    });
-    // Pass instance validity to parent
-    this.props.validateInstance({
-      pType: this.state.predictionType,
-      index: this.state.index,
-      validity: newValidity
+      arg1Input: "",
+      relInput: "",
+      arg2Input: "",
     });
   }
 
   render() {
     return (
-      <Table.Row className="ResultLine">
-        <Table.Cell>
-          <Span valid={this.state.valid} text={this.state.arg1}/>
-          <Span valid={this.state.valid} text={this.state.rel}/>
-          <Span valid={this.state.valid} text={this.state.arg2}/>
-        </Table.Cell>
-        <Table.Cell textAlign='right'>
-          <Button onClick={() => this.setValidity()}>
-            {this.state.buttonText}
+        <div>
+          <Input className="Results-Input"
+                 placeholder="Entity One"
+                 value={this.state.arg1Input}
+                 onChange={this.handleArg1Change} />
+          <Input className="Results-Input"
+                 placeholder="Relation"
+                 value={this.state.relInput}
+                 onChange={this.handleRelChange} />
+          <Input className="Results-Input"
+                 placeholder="Entity Two"
+                 value={this.state.arg2Input}
+                 onChange={this.handleArg2Change} />
+          <Button onClick={() => this.addInstance()}>
+            Add Relation
           </Button>
-        </Table.Cell>
-      </Table.Row>
-    );
-  }
-}
-
-
-class Span extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      text: props["text"],
-    };
-  }
-
-  componentDidMount() {
-    this.updateStyle(false);
-  }
-
-  componentWillReceiveProps(nextProps) {
-    this.updateStyle(nextProps.valid);
-    this.setState({
-      text: nextProps["text"]
-    });
-  }
-
-  // Style text differently based on validity
-  updateStyle(valid) {
-    if (valid) {
-      this.setState({decoration: {
-        color: "green",
-        fontWeight: "bold",
-        }
-      });
-    } else {
-      this.setState({decoration: {
-          textDecorationLine: "line-through",
-          textDecorationStyle: "solid",
-        }
-      });
-    }
-  };
-
-  render() {
-    return (
-      <span style={this.state.decoration} className="Text">
-        {this.state.text}
-      </span>
+        </div>
     );
   }
 }

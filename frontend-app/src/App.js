@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
-import Predictor from './Predictor';
-import Results from './Results'
+import Predictor from './components/Predictor';
+import Results from './components/Results';
 
 function App() {
 
