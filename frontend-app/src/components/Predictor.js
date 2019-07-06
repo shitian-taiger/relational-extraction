@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Input } from 'semantic-ui-react';
+import { Message, Button, Input } from 'semantic-ui-react';
 
 
 function fetcher(url, sentenceToPredict) {
@@ -13,16 +13,30 @@ function fetcher(url, sentenceToPredict) {
 }
 
 class Predictor extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      sentence: ""
+    };
+  }
+
   render() {
     return (
       <div className="Predictor">
-        <div className="Predictor-Header"> Relational Extraction </div>
+        <div className="Predictor-Header"> Open Relational Extraction </div>
         <SentenceInput onResultReceived={this.resultReceived}/>
+        <Message style={{marginLeft: "30px", marginRight: "30px"}}>
+          <Message.Header>Sentence</Message.Header>
+          <p>{this.state.sentence}</p>
+        </Message>
       </div>
     );
   };
 
   resultReceived = (sentence, result) => {
+    this.setState({
+      sentence: sentence
+    });
     this.props.onPredictionResult(sentence, result);
   }
 }
