@@ -23,6 +23,9 @@
     font-size: 15px;
     margin: 10px;
 }
+.ui.table td {
+    padding: 2px !important;
+}
 .InstanceCreator-Input {
     margin: 5px;
 }
@@ -35,6 +38,7 @@
     margin: 15px;
 }
 
-.ui.table td {
-    padding: 2px !important;
+
+.Confirmation {
+    margin: 50px;
 }

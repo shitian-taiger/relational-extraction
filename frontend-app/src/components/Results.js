@@ -79,7 +79,7 @@ class Results extends React.Component {
       this.state.validity.nerOie[result.index] = (result.validity) ? 1 : 0;
     } else {
       console.log("Setting validity of invalid prediction type");
-      throw("Invalid");
+      throw(new Error("Invalid"));
     }
   }
 
