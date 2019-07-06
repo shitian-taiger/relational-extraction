@@ -1,41 +1,40 @@
 .Predictor {
     text-align: center;
 }
-
 .Predictor-Header {
     font-size: 30px;
-    margin: 40px;
+    margin: 20px;
 }
 
 .SentenceInput-Label {
     margin: 10px;
 }
-
 .SentenceInput-Text {
     width: 600px;
 }
 
 .Results {
-    margin: 50px;
+    margin: 20px;
     text-align: center;
     padding-left: 50px;
     padding-right: 50px;
 }
-
-.Results-Header {
-    font-size: 25px;
-    margin: 20px;
-}
-
 .Results-Subheader {
     font-size: 15px;
     margin: 10px;
 }
-
-.Results-Input {
-    margin: 20px;
+.InstanceCreator-Input {
+    margin: 5px;
 }
 
+.ResultLine {
+    margin: 100px;
+    height: 10px;
+}
 .Text {
     margin: 15px;
+}
+
+.ui.table td {
+    padding: 2px !important;
 }

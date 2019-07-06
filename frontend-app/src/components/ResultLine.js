@@ -10,9 +10,14 @@ export class ResultLine extends React.Component {
       arg1: props.text[0],
       rel: props.text[1],
       arg2: props.text[2],
-      valid: false,
       buttonText: "Validate",
     };
+  }
+
+  componentDidMount() {
+    if (this.props.validity) {
+      this.setValidity();
+    }
   }
 
   componentWillReceiveProps(nextProps) {
@@ -97,8 +102,8 @@ class Span extends React.Component {
       });
     } else {
       this.setState({decoration: {
-          textDecorationLine: "line-through",
-          textDecorationStyle: "solid",
+        textDecorationLine: "line-through",
+        textDecorationStyle: "solid",
         }
       });
     }

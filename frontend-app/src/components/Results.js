@@ -13,10 +13,12 @@ class Results extends React.Component {
       // Bitwise validity for user input
       validity: {oie: [], dp: [], nerOie: []},
       userInstances: [],
+      sentence: props.sentence
     };
   }
 
   // Updating of Prediction Results: Set result array and instantiate validity index
+  // Also updates sentence
   componentDidUpdate(prevProps, prevState, snapshot) {
     // Required since setState results in inf loop within componentDidUpdate
     if (!equal(this.props.results, prevProps.results)) {
@@ -33,13 +35,15 @@ class Results extends React.Component {
         oie: results.oie_prediction.map(x => 0),
         dp: results.dp_prediction.map(x => 0),
         nerOie: results.ner_oie_prediction.map(x => 0)
-      }
+      },
+      sentence: this.props.sentence
     });
   }
 
   // Process each prediction type (Array of tuples) into ResultLine(TableRow)
   getResArray(predictionType, arr) {
     let resLines = [];
+    let validity = (predictionType === "USER") ? true : false;
     for (let i = 0; i < arr.length; i++) {
       let line = arr[i];
       resLines.push(<ResultLine
@@ -47,6 +51,7 @@ class Results extends React.Component {
                     key={i} // Each child in list requires unique key, not accessible in props
                     index={i}
                     text={line}
+                    validity={validity}
                     validateInstance={this.instanceValidation}/>);
     }
     return resLines;
@@ -96,31 +101,32 @@ class Results extends React.Component {
     let userLines = this.getResArray("USER", this.state.userInstances);
     return (
       <div className="Results">
-        <div className="Results-Header"> Predicted Results </div>
         <div className="Results-Subheader"> OIE Results </div>
-        <Table className="Results-Table">
+        <Table selectable className="Results-Table">
           <Table.Body>{oieResLines}</Table.Body>
         </Table>
 
         <div className="Results-Subheader"> NER-OIE Results </div>
-        <Table className="Results-Table">
+        <Table selectable className="Results-Table">
           <Table.Body>{oieNerResLines}</Table.Body>
         </Table>
 
         <div className="Results-Subheader"> DP Results </div>
-        <Table className="Results-Table">
+        <Table selectable className="Results-Table">
           <Table.Body>{dPLines}</Table.Body>
         </Table>
 
         <div className="Results-Subheader"> Custom Instances </div>
-        <Table className="Results-Table">
+        <Table selectable className="Results-Table">
           <Table.Body>{userLines}</Table.Body>
         </Table>
 
-        <InstanceCreator instanceCreate={this.addInstance}/>
+        <InstanceCreator
+          sentence={this.state.sentence}
+          instanceCreate={this.addInstance}/>
 
         <Button onClick={() => this.confirmValidations()}>
-          Confirm Validations
+          Confirm Instances
         </Button>
       </div>
 
@@ -135,10 +141,20 @@ class InstanceCreator extends React.Component {
       arg1Input: "",
       relInput: "",
       arg2Input: "",
+      sentence: props.sentence
     };
     this.handleArg1Change = this.handleArg1Change.bind(this);
     this.handleRelChange = this.handleRelChange.bind(this);
     this.handleArg2Change = this.handleArg2Change.bind(this);
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    // Required since setState results in inf loop within componentDidUpdate
+    if (!equal(this.props.sentence, prevProps.sentence)) {
+      this.setState({
+        sentence: this.props.sentence
+      });
+    }
   }
 
   handleArg1Change(event) {
@@ -152,32 +168,44 @@ class InstanceCreator extends React.Component {
   }
 
   addInstance() {
-    this.props.instanceCreate(this.state);
-    this.setState({
-      arg1Input: "",
-      relInput: "",
-      arg2Input: "",
-    });
+    console.log(this.state.sentence)
+    if (this.state.sentence === "") {
+      this.setState({errorMessage: "Predict on valid sentence first"});
+    } else if (!this.state.arg1Input || !this.state.relInput || !this.state.arg2Input) {
+      this.setState({errorMessage: "Ensure all fields are filled in"});
+    } else if (!this.state.sentence.includes(this.state.arg1Input) ||
+               !this.state.sentence.includes(this.state.relInput) ||
+               !this.state.sentence.includes(this.state.arg2Input)) {
+      this.setState({errorMessage: "Ensure arguments are contained within sentence"});
+    } else {
+      this.props.instanceCreate(this.state);
+      this.setState({
+        arg1Input: "",
+        relInput: "",
+        arg2Input: "",
+      });
+    }
   }
 
   render() {
     return (
         <div>
-          <Input className="Results-Input"
+          <Input className="InstanceCreator-Input"
                  placeholder="Entity One"
                  value={this.state.arg1Input}
                  onChange={this.handleArg1Change} />
-          <Input className="Results-Input"
+          <Input className="InstanceCreator-Input"
                  placeholder="Relation"
                  value={this.state.relInput}
                  onChange={this.handleRelChange} />
-          <Input className="Results-Input"
+          <Input className="InstanceCreator-Input"
                  placeholder="Entity Two"
                  value={this.state.arg2Input}
                  onChange={this.handleArg2Change} />
           <Button onClick={() => this.addInstance()}>
             Add Relation
           </Button>
+          <div>{this.state.errorMessage}</div>
         </div>
     );
   }

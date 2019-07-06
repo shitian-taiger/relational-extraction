@@ -22,8 +22,8 @@ class Predictor extends React.Component {
     );
   };
 
-  resultReceived = (result) => {
-    this.props.onPredictionResult(result);
+  resultReceived = (sentence, result) => {
+    this.props.onPredictionResult(sentence, result);
   }
 }
 
@@ -48,13 +48,13 @@ class SentenceInput extends React.Component {
   handleKeyPress(target) {
     if(target.charCode === 13) { // `Enter` keycode
       fetcher(this.state.oie_predict_url, this.state.sentence)
-        .then((res) => this.props.onResultReceived(res));
+        .then((res) => this.props.onResultReceived(this.state.sentence, res));
     }
   }
   handleSubmit(event) {
     event.preventDefault();
     fetcher(this.state.oie_predict_url, this.state.sentence)
-      .then((res) => this.props.onResultReceived(res));
+      .then((res) => this.props.onResultReceived(this.state.sentence, res));
   }
 
   render() {
@@ -69,7 +69,7 @@ class SentenceInput extends React.Component {
                placeholder="Enter a sentence"
                value={this.state.sentence}
                onChange={this.handleChange} />
-        <Button onClick={this.handleSubmit} >
+        <Button style={{margin: "10px"}} onClick={this.handleSubmit} >
           Predict
         </Button>
       </div>

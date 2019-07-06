@@ -19,6 +19,7 @@ class Base extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      sentence: "",
       predictedResults: null,
     };
   }
@@ -29,14 +30,19 @@ class Base extends React.Component {
         {/* Pass onPredictionResult prop to Predictor for callback on retrieval */}
         <Predictor onPredictionResult={this.resultReceived}/>
         {/* Pass onValidated prop to Results for callback on user validation of results */}
-        <Results onValidated={this.validationReceived}
-                 results={this.state.predictedResults}/>
+        <Results
+          sentence={this.state.sentence}
+          onValidated={this.validationReceived}
+          results={this.state.predictedResults}/>
       </div>
     );
   }
 
-  resultReceived = (predictionResults) => {
-    this.setState({predictedResults: predictionResults});
+  resultReceived = (sentence, predictionResults) => {
+    this.setState({
+      sentence: sentence,
+      predictedResults: predictionResults
+    });
   }
 
   validationReceived = (validationResult) => {
