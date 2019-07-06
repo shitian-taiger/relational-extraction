@@ -1,9 +1,9 @@
 import React from 'react';
 import './App.css';
-import _ from 'lodash';
 import Predictor from './components/Predictor';
 import Results from './components/Results';
 import { Button, Table, Container, Transition } from 'semantic-ui-react';
+import equal from 'fast-deep-equal';
 
 function App() {
 
@@ -96,7 +96,7 @@ class Base extends React.Component {
         <Transition visible={this.state.resultsPresent && !this.state.instancesGenerated}
                     animation="scale"
                     duration={200}>
-          <Container>
+          <Container fluid>
             <Results
               sentence={this.state.sentence}
               onValidated={this.validationReceived}
@@ -107,7 +107,7 @@ class Base extends React.Component {
         <Transition visible={this.state.instancesGenerated}
                     animation="scale"
                     duration={200}>
-          <Container>
+          <Container fluid>
             <Confirmation
               instances={this.state.validInstances}
               onConfirmation={this.confirmInstances}
@@ -125,9 +125,17 @@ class Confirmation extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      sentence: "",
       instances: props.instances
     };
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    // Required since setState results in inf loop within componentDidUpdate
+    if (!equal(this.props.instances, prevProps.instances)) {
+      this.setState({
+        instances: this.props.instances
+      });
+    }
   }
 
   instanceTable() {

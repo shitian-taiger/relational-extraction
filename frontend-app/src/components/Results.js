@@ -1,23 +1,26 @@
+import _ from 'lodash';
 import React from 'react';
 import { Input, Button, Table } from 'semantic-ui-react';
 import { ResultLine } from './ResultLine';
 import equal from 'fast-deep-equal';
 
+let initialState = {
+  oieResults: [],
+  dpResults: [],
+  nerOieResults: [],
+  oieResLines : [],
+  dPLines: [],
+  oieNerResLines: [],
+  // Bitwise validity for user input
+  validity: {oie: [], dp: [], nerOie: []},
+  userInstances: [],
+};
+
 class Results extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      oieResults: [],
-      dpResults: [],
-      nerOieResults: [],
-      oieResLines : [],
-      dPLines: [],
-      oieNerResLines: [],
-      // Bitwise validity for user input
-      validity: {oie: [], dp: [], nerOie: []},
-      userInstances: [],
-      sentence: props.sentence
-    };
+    this.state = initialState;
+    this.state.sentence = props.sentence;
   }
 
   // Updating of Prediction Results: Set result array and instantiate validity index
@@ -30,22 +33,27 @@ class Results extends React.Component {
   }
   updatePredictionResults() {
     let results = this.props.results;
-    this.setState({
-      oieResults: results.oie_prediction,
-      dpResults: results.dp_prediction,
-      nerOieResults: results.ner_oie_prediction,
-      validity: {
-        oie: results.oie_prediction.map(x => 0),
-        dp: results.dp_prediction.map(x => 0),
-        nerOie: results.ner_oie_prediction.map(x => 0)
-      },
-      sentence:this.props.sentence,
-      oieResLines : this.getResArray("OIE", results.oie_prediction),
-      dPLines: this.getResArray("DP", results.dp_prediction),
-      oieNerResLines: this.getResArray("NER-OIE", results.ner_oie_prediction),
-      userInstances: [],
-      userLines: []
-    });
+    if (_.isEmpty(results)) {
+      this.setState(initialState);
+      this.state.sentence = "";
+    } else {
+      this.setState({
+        oieResults: results.oie_prediction,
+        dpResults: results.dp_prediction,
+        nerOieResults: results.ner_oie_prediction,
+        validity: {
+          oie: results.oie_prediction.map(x => 0),
+          dp: results.dp_prediction.map(x => 0),
+          nerOie: results.ner_oie_prediction.map(x => 0)
+        },
+        sentence:this.props.sentence,
+        oieResLines : this.getResArray("OIE", results.oie_prediction),
+        dPLines: this.getResArray("DP", results.dp_prediction),
+        oieNerResLines: this.getResArray("NER-OIE", results.ner_oie_prediction),
+        userInstances: [],
+        userLines: []
+      });
+    }
   }
 
   // Process each prediction type (Array of tuples) into ResultLine(TableRow)

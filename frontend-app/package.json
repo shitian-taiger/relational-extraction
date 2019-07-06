@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "fast-deep-equal": "^2.0.1",
+    "lodash": "^4.17.11",
     "semantic-ui-react": "^0.87.2"
   }
 }
