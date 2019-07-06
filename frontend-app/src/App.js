@@ -14,6 +14,17 @@ function App() {
 
 export default App;
 
+// Helper for mapping vArr and instances
+function mapValidInstance(validityArr, instances) {
+  let validInstances = []
+  for (let i = 0; i < instances.length; i++) {
+    if (validityArr[i] === 1) {
+      validInstances.push(instances[i])
+    }
+  }
+  return validInstances;
+}
+
 class Base extends React.Component {
 
   constructor(props) {
@@ -21,6 +32,10 @@ class Base extends React.Component {
     this.state = {
       sentence: "",
       predictedResults: null,
+      oieResults: [],
+      nerOieResults: [],
+      dpResults: [],
+      validInstances: []
     };
   }
 
@@ -38,15 +53,25 @@ class Base extends React.Component {
     );
   }
 
+  // Retrieve sentence and predicted results from Predictor
+  // predictionResults of format: {dp / oie / ner_oie_prediction: }
   resultReceived = (sentence, predictionResults) => {
     this.setState({
       sentence: sentence,
-      predictedResults: predictionResults
+      predictedResults: predictionResults,
+      oieResults: predictionResults.oie_prediction,
+      nerOieResults: predictionResults.ner_oie_prediction,
+      dpResults: predictionResults.dp_prediction
     });
   }
 
-  validationReceived = (validationResult) => {
-    console.log(validationResult);
+  validationReceived = (validationArr, userInstances) => {
+    let validInstances = userInstances.
+        concat(mapValidInstance(validationArr.oie, this.state.oieResults)).
+        concat(mapValidInstance(validationArr.dp, this.state.dpResults)).
+        concat(mapValidInstance(validationArr.nerOie, this.state.nerOieResults))
+    this.setState({
+      validInstances: validInstances
+    });
   }
 }
-

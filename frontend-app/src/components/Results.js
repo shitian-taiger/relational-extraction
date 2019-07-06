@@ -10,6 +10,9 @@ class Results extends React.Component {
       oieResults: [],
       dpResults: [],
       nerOieResults: [],
+      oieResLines : [],
+      dPLines: [],
+      oieNerResLines: [],
       // Bitwise validity for user input
       validity: {oie: [], dp: [], nerOie: []},
       userInstances: [],
@@ -36,7 +39,12 @@ class Results extends React.Component {
         dp: results.dp_prediction.map(x => 0),
         nerOie: results.ner_oie_prediction.map(x => 0)
       },
-      sentence: this.props.sentence
+      sentence:this.props.sentence,
+      oieResLines : this.getResArray("OIE", results.oie_prediction),
+      dPLines: this.getResArray("DP", results.dp_prediction),
+      oieNerResLines: this.getResArray("NER-OIE", results.ner_oie_prediction),
+      userInstances: [],
+      userLines: []
     });
   }
 
@@ -82,50 +90,46 @@ class Results extends React.Component {
         this.state.dpResults.length === 0) {
       alert("Please process a valid sentence");
       }
-    this.props.onValidated(this.state.validity);
+    this.props.onValidated(this.state.validity, this.state.userInstances);
   }
 
   // InstanceCreator Helper
   addInstance = (instance) => {
     let newInstances = this.state.userInstances.concat([[instance.arg1Input, instance.relInput, instance.arg2Input]]);
     this.setState({
-      userInstances: newInstances
+      userInstances: newInstances,
+      userLines: this.getResArray("USER", newInstances),
     });
   }
 
   render() {
-    // TODO Don't compute these calculations on every render, move to results retrieval
-    let oieResLines = this.getResArray("OIE", this.state.oieResults);
-    let dPLines = this.getResArray("DP", this.state.dpResults);
-    let oieNerResLines = this.getResArray("NER-OIE", this.state.nerOieResults);
-    let userLines = this.getResArray("USER", this.state.userInstances);
     return (
       <div className="Results">
         <div className="Results-Subheader"> OIE Results </div>
         <Table selectable className="Results-Table">
-          <Table.Body>{oieResLines}</Table.Body>
+          <Table.Body>{this.state.oieResLines}</Table.Body>
         </Table>
 
         <div className="Results-Subheader"> NER-OIE Results </div>
         <Table selectable className="Results-Table">
-          <Table.Body>{oieNerResLines}</Table.Body>
+          <Table.Body>{this.state.oieNerResLines}</Table.Body>
         </Table>
 
         <div className="Results-Subheader"> DP Results </div>
         <Table selectable className="Results-Table">
-          <Table.Body>{dPLines}</Table.Body>
+          <Table.Body>{this.state.dPLines}</Table.Body>
         </Table>
 
         <div className="Results-Subheader"> Custom Instances </div>
         <Table selectable className="Results-Table">
-          <Table.Body>{userLines}</Table.Body>
+          <Table.Body>{this.state.userLines}</Table.Body>
         </Table>
 
         <InstanceCreator
           sentence={this.state.sentence}
           instanceCreate={this.addInstance}/>
 
-        <Button onClick={() => this.confirmValidations()}>
+        <Button style={{margin: "15px"}} onClick={() => this.confirmValidations()}>
           Confirm Instances
         </Button>
       </div>
@@ -168,7 +172,6 @@ class InstanceCreator extends React.Component {
   }
 
   addInstance() {
-    console.log(this.state.sentence)
     if (this.state.sentence === "") {
       this.setState({errorMessage: "Predict on valid sentence first"});
     } else if (!this.state.arg1Input || !this.state.relInput || !this.state.arg2Input) {
@@ -187,6 +190,13 @@ class InstanceCreator extends React.Component {
     }
   }
 
+  // Allow `Enter` keypress to simulate button clicking
+  handleKeyPress = (target) => {
+    if(target.charCode === 13) { // `Enter` keycode
+      this.addInstance()
+    }
+  }
+
   render() {
     return (
         <div>
@@ -201,11 +211,12 @@ class InstanceCreator extends React.Component {
           <Input className="InstanceCreator-Input"
                  placeholder="Entity Two"
                  value={this.state.arg2Input}
-                 onChange={this.handleArg2Change} />
+                 onChange={this.handleArg2Change}
+                 onKeyPress={this.handleKeyPress}/>
           <Button onClick={() => this.addInstance()}>
             Add Relation
           </Button>
-          <div>{this.state.errorMessage}</div>
+          <div style={{color: "Red"}}>{this.state.errorMessage}</div>
         </div>
     );
   }
