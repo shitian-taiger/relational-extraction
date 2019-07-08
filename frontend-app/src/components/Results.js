@@ -95,8 +95,9 @@ class Results extends React.Component {
   confirmValidations() {
     if (this.state.oieResults.length === 0 &&
         this.state.nerOieResults.length === 0 &&
-        this.state.dpResults.length === 0) {
-      alert("Please process a valid sentence");
+        this.state.dpResults.length === 0 &&
+        this.state.userInstances.length === 0) {
+      alert("No instances");
       }
     this.props.onValidated(this.state.validity, this.state.userInstances);
   }
