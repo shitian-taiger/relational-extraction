@@ -17,14 +17,26 @@ function App() {
 export default App;
 
 // Helper for mapping vArr and instances
-function mapValidInstance(validityArr, instances) {
+function mapInstance(validityArr, instances, validity) {
   let validInstances = [];
   for (let i = 0; i < instances.length; i++) {
-    if (validityArr[i] === 1) {
+    if (validityArr[i] === validity) {
       validInstances.push(instances[i]);
     }
   }
   return validInstances;
+}
+
+function instanceAdd(sentence, validInstances, invalidInstances) {
+  return fetch("http://127.0.0.1:8000/addinstances", {
+    method: 'POST',
+    body: JSON.stringify({
+      sentence: sentence,
+      validInstances: validInstances,
+      invalidInstances: invalidInstances
+    }),
+  })
+    .then((response) => response.json());
 }
 
 class Base extends React.Component {
@@ -40,6 +52,7 @@ class Base extends React.Component {
       resultsPresent: false,
       instancesGenerated: false,
       validInstances: [],
+      invalidInstances: []
     };
   }
 
@@ -61,19 +74,27 @@ class Base extends React.Component {
 
   validationReceived = (validationArr, userInstances) => {
     let validInstances = userInstances
-        .concat(mapValidInstance(validationArr.oie, this.state.oieResults))
-        .concat(mapValidInstance(validationArr.dp, this.state.dpResults))
-        .concat(mapValidInstance(validationArr.nerOie, this.state.nerOieResults));
+        .concat(mapInstance(validationArr.oie, this.state.oieResults, 1))
+        .concat(mapInstance(validationArr.dp, this.state.dpResults, 1))
+        .concat(mapInstance(validationArr.nerOie, this.state.nerOieResults, 1));
+    let invalidInstances = userInstances
+        .concat(mapInstance(validationArr.oie, this.state.oieResults, 0))
+        .concat(mapInstance(validationArr.dp, this.state.dpResults, 0))
+        .concat(mapInstance(validationArr.nerOie, this.state.nerOieResults, 0));
     this.setState({
       instancesGenerated: true
     });
     this.setState({
       validInstances: validInstances,
+      invalidInstances: invalidInstances
     });
   }
 
   // Reset everything once instances are confirmed
   confirmInstances = () => {
+    instanceAdd(this.state.sentence, this.state.validInstances, this.state.invalidInstances)
+      .then((res) => console.log("Instances updated"))
+      .catch((err) => alert("Error: Instances not uploaded"));
     this.setState({
       sentence: "",
       predictedResults: {},
@@ -83,7 +104,7 @@ class Base extends React.Component {
       resultsPresent: false,
       instancesGenerated: false,
       validInstances: [],
-    })
+    });
   }
 
   render() {
@@ -109,7 +130,8 @@ class Base extends React.Component {
                     duration={200}>
           <Container fluid>
             <Confirmation
-              instances={this.state.validInstances}
+              validInstances={this.state.validInstances}
+              invalidInstances={this.state.invalidInstances}
               onConfirmation={this.confirmInstances}
               />
           </Container>
@@ -125,25 +147,38 @@ class Confirmation extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      instances: props.instances
+      validInstances: props.validInstances,
+      invalidInstances: props.invalidInstances
     };
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
     // Required since setState results in inf loop within componentDidUpdate
-    if (!equal(this.props.instances, prevProps.instances)) {
+    if (!equal(this.props.validInstances, prevProps.validInstances)) {
       this.setState({
-        instances: this.props.instances
+        validInstances: this.props.validInstances,
+        invalidInstances: this.props.invalidInstances
       });
     }
   }
 
-  instanceTable() {
-    let tableRows = []
-    for (let i = 0; i < this.state.instances.length; i++) {
+  validInstanceTable() {
+    let tableRows = [];
+    for (let i = 0; i < this.state.validInstances.length; i++) {
       let tableCells = [];
       for (let j = 0; j < 3; j++) {
-        tableCells.push(<Table.Cell key={j}>{this.state.instances[i][j]}</Table.Cell>);
+        tableCells.push(<Table.Cell key={j}>{this.state.validInstances[i][j]}</Table.Cell>);
+      }
+      tableRows.push(<Table.Row key={i}>{tableCells}</Table.Row>);
+    }
+    return tableRows;
+  }
+  invalidInstanceTable() {
+    let tableRows = [];
+    for (let i = 0; i < this.state.invalidInstances.length; i++) {
+      let tableCells = [];
+      for (let j = 0; j < 3; j++) {
+        tableCells.push(<Table.Cell key={j}>{this.state.invalidInstances[i][j]}</Table.Cell>);
       }
       tableRows.push(<Table.Row key={i}>{tableCells}</Table.Row>);
     }
@@ -160,17 +195,31 @@ class Confirmation extends React.Component {
         <Table>
           <Table.Header>
             <Table.Row>
-              <Table.HeaderCell>Instances</Table.HeaderCell>
+              <Table.HeaderCell>Valid Instances</Table.HeaderCell>
               <Table.HeaderCell></Table.HeaderCell>
               <Table.HeaderCell></Table.HeaderCell>
             </Table.Row>
           </Table.Header>
 
           <Table.Body>
-            {this.instanceTable()}
+            {this.validInstanceTable()}
           </Table.Body>
         </Table>
-        <Button onClick={this.handleSubmit}>Confirm Instances</Button>
+
+        <Table>
+          <Table.Header>
+            <Table.Row>
+              <Table.HeaderCell>Invalid Instances</Table.HeaderCell>
+              <Table.HeaderCell></Table.HeaderCell>
+              <Table.HeaderCell></Table.HeaderCell>
+            </Table.Row>
+          </Table.Header>
+
+          <Table.Body>
+            {this.invalidInstanceTable()}
+          </Table.Body>
+        </Table>
+        <Button onClick={this.handleSubmit}>Save Instances</Button>
       </div>
     );
   }
