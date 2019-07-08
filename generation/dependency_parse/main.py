@@ -38,6 +38,14 @@ def generate(root: Dict):
                 relations = relations + create_relations(subjs, xcomp_relations, objs)
 
     elif subj is not None and DPHelper.is_proper_noun(subj):
+        subjs = get_all_nouns(subj, proper_noun=True)
+
+        appos_rels, appos_objs = [], []
+        # Find direct appositional relations within NSUBJ block
+        appos_rel_objs = []
+        for appos in DPHelper.get_child_type(subj, Relations.APPOSITION):
+            a_objs, a_relations = direct_appositional_relations(appos)
+            relations += create_nested_relations(subjs, a_relations, a_objs)
 
         # TODO Check for clausal complement for Subj (INDEPENDENT)
         if DPHelper.get_child_type(root, Relations.CLAUSAL_COMPLEMENT):
@@ -46,7 +54,6 @@ def generate(root: Dict):
         # Passive subject, look into preposition for predicate object with possessive
         if DPHelper.is_proper_noun(subj) and subj["link"] == Relations.PASSIVE_NOM_SUBJECT:
             logging.log(INFO, "============= NNP PASSIVE SUBJECT ===============")
-            subjs = get_all_nouns(subj, proper_noun=True)
             objs, aux_relations, appos = subjpass(root)
             for appos_instance in appos:
                 relations = relations + create_relations(subjs, appos_instance["relation"], appos_instance["obj"])
@@ -55,27 +62,23 @@ def generate(root: Dict):
         # Possible case where root is noun and hence subject is not labeled passive but relation still exists
         elif DPHelper.is_noun(root):
             logging.log(INFO, "============= NNP SUBJECT with NOUN ROOT ===============")
-            subjs = get_all_nouns(subj, proper_noun=True)
             objs, aux_relations = nnroot_subj(root)
             relations = relations + create_relations(subjs, aux_relations, objs)
 
         # Usually the case that the direct obj being non-NNP represents relation
         elif DPHelper.is_verb(root) and obj is not None:
             logging.log(INFO, "============= NNP SUBJECT with VERB ROOT (NON-NNP DOBJ present) ===============")
-            subjs = get_all_nouns(subj, proper_noun=True)
             objs, aux_relations = vbroot_subj_xobj(root)
             relations = relations + create_relations(subjs, aux_relations, objs)
 
         # Root verb without concrete noun form but valid relation (E.g. lives, resides) TODO Do we require `in/from etc.` for preposition?
         elif DPHelper.is_verb(root):
             logging.log(INFO, "============= NNP SUBJECT with VERB ROOT ===============")
-            subjs = get_all_nouns(subj, proper_noun=True)
             objs, aux_relations = vbroot_subj(root)
             relations = relations + create_nested_relations(subjs, aux_relations, objs)
 
         elif DPHelper.is_adjective(root):
             logging.log(INFO, "============= NNP SUBJECT with ADJ ROOT ===============")
-            subjs = get_all_nouns(subj, proper_noun=True)
             objs, aux_relations = vbroot_subj(root) # FIXME We assume this is similar to verb root for now
             relations = relations + create_nested_relations(subjs, aux_relations, objs)
         else:

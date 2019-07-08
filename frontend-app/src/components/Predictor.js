@@ -44,7 +44,7 @@ class Predictor extends React.Component {
 class SentenceInput extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { sentence: "Lex Luthor, who was an actress and singer in New York and around the world, died on saturday at St. Vincent's hospital in Manhattan.",
+    this.state = { sentence: "Lexa Luthoror, an actress and singer in New York and around the world, died on saturday at St. Vincent's hospital in Manhattan.",
                    oie_predict_url: "http://127.0.0.1:8000/predict/all",
                    oie_results: [],
                  };

@@ -50,10 +50,6 @@ def subjpass(root: Dict):
     '''
     relations, objs, appos_rels = [], [], []
 
-    for appos in DPHelper.get_appositional_phrases(DPHelper.get_subject(root)):
-        appos_objs, appos_relations = pobj_appositional_relations(appos)
-        appos_rels.append({"relation": appos_relations, "obj": appos_objs})
-
     root_relations = False # True if predicate has NNP within preposition
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)
@@ -138,11 +134,6 @@ def vbroot_subj(root: Dict):
                        |
     '''
     objs, aux_relations = [], []
-
-    for appos in DPHelper.get_appositional_phrases(DPHelper.get_subject(root)):
-        appos_objs, appos_relations = pobj_appositional_relations(appos)
-        objs.append(appos_objs)
-        aux_relations.append(appos_relations)
 
     for prep in DPHelper.get_child_type(root, Relations.PREPOSITION):
         pred_obj = get_predicate_object(prep)

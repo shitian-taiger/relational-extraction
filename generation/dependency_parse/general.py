@@ -4,6 +4,23 @@ from .constants import Relations, POS
 # ========================================= General Methods =================================================
 
 
+def direct_appositional_relations(appos: Dict):
+    '''
+    NSUBJ---------------- ROOT
+      |
+    APPOS
+
+    Child NNP pobj of appositional noun would represent relation with NNP nominal
+    '''
+    objs, relations = [], []
+    for prep in DPHelper.get_child_type(appos, Relations.PREPOSITION):
+        pobj = get_predicate_object(prep)
+        if DPHelper.is_proper_noun(pobj):
+            relations.append(get_all_nouns(appos))
+            objs.append(get_all_nouns(pobj, proper_noun=True))
+    return objs, relations
+
+
 def pobj_appositional_relations(appos: Dict):
     '''
     -------------------POBJ
