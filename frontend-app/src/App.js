@@ -16,16 +16,6 @@ function App() {
 
 export default App;
 
-// Helper for mapping vArr and instances
-function mapInstance(validityArr, instances, validity) {
-  let validInstances = [];
-  for (let i = 0; i < instances.length; i++) {
-    if (validityArr[i] === validity) {
-      validInstances.push(instances[i]);
-    }
-  }
-  return validInstances;
-}
 
 function instanceAdd(sentence, validInstances, invalidInstances) {
   return fetch("http://127.0.0.1:8000/addinstances", {
@@ -72,15 +62,24 @@ class Base extends React.Component {
     });
   }
 
+  // Helper for mapping vArr and instances
+  getInstances(validationArr, validity) {
+    let instances = [];
+    for (let idx in this.state.oieResults) {
+      if (validationArr.oie[idx] === validity) instances.push(this.state.oieResults[idx]);
+    }
+    for (let idx in this.state.dpResults) {
+      if (validationArr.dp[idx] === validity) instances.push(this.state.dpResults[idx]);
+    }
+    for (let idx in this.state.nerOieResults) {
+      if (validationArr.nerOie[idx] === validity) instances.push(this.state.nerOieResults[idx]);
+    }
+    return instances;
+  }
+  // Upon confirmation of instance validity from Results
   validationReceived = (validationArr, userInstances) => {
-    let validInstances = userInstances
-        .concat(mapInstance(validationArr.oie, this.state.oieResults, 1))
-        .concat(mapInstance(validationArr.dp, this.state.dpResults, 1))
-        .concat(mapInstance(validationArr.nerOie, this.state.nerOieResults, 1));
-    let invalidInstances = userInstances
-        .concat(mapInstance(validationArr.oie, this.state.oieResults, 0))
-        .concat(mapInstance(validationArr.dp, this.state.dpResults, 0))
-        .concat(mapInstance(validationArr.nerOie, this.state.nerOieResults, 0));
+    let validInstances = userInstances.concat(this.getInstances(validationArr, 1));
+    let invalidInstances = this.getInstances(validationArr, 0);
     this.setState({
       instancesGenerated: true
     });

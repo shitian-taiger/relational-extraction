@@ -113,32 +113,19 @@ class Results extends React.Component {
       throw(new Error("Trying to get wrong result array type"));
     }
   }
-  // Test for equality of instances for setting of validity of duplicates
-  instancesEqual(instance1, instance2) {
-    if (instance1[0].valueOf() === instance2[0].valueOf() &&
-        instance1[0].valueOf() === instance2[0].valueOf() &&
-        instance1[0].valueOf() === instance2[0].valueOf()) {
-    }
-  }
   setValidityDuplicate(result) {
     let result_instance = this.getResultArr(result.pType)[result.index];
     for (let idx in this.state.oieResults) {
       let instance = this.state.oieResults[idx];
-      if (equal(instance, result_instance)) {
-        this.getValidityArr("OIE")[idx] = this.getValidityArr(result.pType)[result.index];
-      }
+      if (equal(instance, result_instance)) this.getValidityArr("OIE")[idx] = this.getValidityArr(result.pType)[result.index];
     }
     for (let idx in this.state.dpResults) {
       let instance = this.state.dpResults[idx];
-      if (equal(instance, result_instance)) {
-        this.getValidityArr("DP")[idx] = this.getValidityArr(result.pType)[result.index];
-      }
+      if (equal(instance, result_instance)) this.getValidityArr("DP")[idx] = this.getValidityArr(result.pType)[result.index];
     }
     for (let idx in this.state.nerOieResults) {
       let instance = this.state.nerOieResults[idx];
-      if (equal(instance, result_instance)) {
-        this.getValidityArr("NER-OIE")[idx] = this.getValidityArr(result.pType)[result.index];
-      }
+      if (equal(instance, result_instance)) this.getValidityArr("NER-OIE")[idx] = this.getValidityArr(result.pType)[result.index];
     }
     this.updateInstances(this.state.oieResults, this.state.dpResults, this.state.nerOieResults);
   }
