@@ -14,6 +14,7 @@ let initialState = {
   // Bitwise validity for user input
   validity: {oie: [], dp: [], nerOie: []},
   userInstances: [],
+  sentence: ""
 };
 
 class Results extends React.Component {
@@ -35,7 +36,6 @@ class Results extends React.Component {
     let results = this.props.results;
     if (_.isEmpty(results)) {
       this.setState(initialState);
-      this.state.sentence = "";
     } else {
       this.setState({
         oieResults: results.oie_prediction,
@@ -47,20 +47,37 @@ class Results extends React.Component {
           nerOie: results.ner_oie_prediction.map(x => 0)
         },
         sentence:this.props.sentence,
-        oieResLines : this.getResArray("OIE", results.oie_prediction),
-        dPLines: this.getResArray("DP", results.dp_prediction),
-        oieNerResLines: this.getResArray("NER-OIE", results.ner_oie_prediction),
         userInstances: [],
         userLines: []
       });
+      // We pass in results for updateInstances since state change for setState above doesn't
+      // kick in until end of function call
+      this.updateInstances(
+        results.oie_prediction,
+        results.dp_prediction,
+        results.ner_oie_prediction,
+      );
     }
   }
 
+  updateInstances(oie, dp, ner_oie) {
+    this.setState({
+      oieResLines : this.getResArray("OIE", oie),
+      dPLines: this.getResArray("DP", dp),
+      oieNerResLines: this.getResArray("NER-OIE", ner_oie),
+    });
+  }
   // Process each prediction type (Array of tuples) into ResultLine(TableRow)
   getResArray(predictionType, arr) {
     let resLines = [];
-    let validity = (predictionType === "USER") ? true : false;
     for (let i = 0; i < arr.length; i++) {
+      let validity = false;
+      if (predictionType === "USER") {
+        validity = true;
+      } else {
+        let validityArr = this.getValidityArr(predictionType);
+        validity = (validityArr[i] === 1) ? true : false;
+      }
       let line = arr[i];
       resLines.push(<ResultLine
                     pType={predictionType}
@@ -73,18 +90,75 @@ class Results extends React.Component {
     return resLines;
   }
 
+  // Helpers for getting corresponding arrays for prediction types
+  getValidityArr(pType) {
+    if (pType === "OIE") {
+      return this.state.validity.oie;
+    } else if (pType === "DP") {
+      return this.state.validity.dp;
+    } else if (pType === "NER-OIE") {
+      return this.state.validity.nerOie;
+    } else {
+      throw(new Error("Trying to get wrong result array type"));
+    }
+  }
+  getResultArr(pType) {
+    if (pType === "OIE") {
+      return this.state.oieResults;
+    } else if (pType === "DP") {
+      return this.state.dpResults;
+    } else if (pType === "NER-OIE") {
+      return this.state.nerOieResults;
+    } else {
+      throw(new Error("Trying to get wrong result array type"));
+    }
+  }
+  // Test for equality of instances for setting of validity of duplicates
+  instancesEqual(instance1, instance2) {
+    if (instance1[0].valueOf() === instance2[0].valueOf() &&
+        instance1[0].valueOf() === instance2[0].valueOf() &&
+        instance1[0].valueOf() === instance2[0].valueOf()) {
+    }
+  }
+  setValidityDuplicate(result) {
+    let result_instance = this.getResultArr(result.pType)[result.index];
+    for (let idx in this.state.oieResults) {
+      let instance = this.state.oieResults[idx];
+      if (equal(instance, result_instance)) {
+        this.getValidityArr("OIE")[idx] = this.getValidityArr(result.pType)[result.index];
+      }
+    }
+    for (let idx in this.state.dpResults) {
+      let instance = this.state.dpResults[idx];
+      if (equal(instance, result_instance)) {
+        this.getValidityArr("DP")[idx] = this.getValidityArr(result.pType)[result.index];
+      }
+    }
+    for (let idx in this.state.nerOieResults) {
+      let instance = this.state.nerOieResults[idx];
+      if (equal(instance, result_instance)) {
+        this.getValidityArr("NER-OIE")[idx] = this.getValidityArr(result.pType)[result.index];
+      }
+    }
+    this.updateInstances(this.state.oieResults, this.state.dpResults, this.state.nerOieResults);
+  }
+
   /** To be called by ResultLine child class, result should contain:
       pType : Prediction Type
       index : Index of instance within prediction type
       validity : Whether instance is valid
      */
   instanceValidation = (result) => {
-    if (result.pType === "OIE") {
-      this.state.validity.oie[result.index] = (result.validity) ? 1 : 0;
-    } else if (result.pType === "DP") {
-      this.state.validity.dp[result.index] = (result.validity) ? 1 : 0;
-    } else if (result.pType === "NER-OIE") {
-      this.state.validity.nerOie[result.index] = (result.validity) ? 1 : 0;
+    if (result.pType === "OIE" || result.pType === "DP" || result.pType === "NER-OIE") {
+      let validityArr = this.getValidityArr(result.pType);
+      validityArr[result.index] = (result.validity) ? 1 : 0;
+      this.setValidityDuplicate(result);
+    } else if (result.pType === "USER") {
+      this.state.userInstances.splice(result.index, 1);
+      this.setState({
+        userInstances: this.state.userInstances,
+        userLines: this.getResArray("USER", this.state.userInstances)
+      });
     } else {
       console.log("Setting validity of invalid prediction type");
       throw(new Error("Invalid"));

@@ -10,16 +10,21 @@ export class ResultLine extends React.Component {
       arg1: props.text[0],
       rel: props.text[1],
       arg2: props.text[2],
-      buttonText: "Validate",
+      buttonText: "Validate"
     };
   }
 
+  // This is called on creation of component, set for case USER where buttonText is Delete
   componentDidMount() {
-    if (this.props.validity) {
-      this.setValidity();
+    if (this.state.predictionType === "USER") {
+      this.setState({
+        valid: true,
+        buttonText: "Delete"
+      });
     }
   }
 
+  // Updating new props, presumably only for updating validity
   componentWillReceiveProps(nextProps) {
     this.updateArguments(nextProps);
   }
@@ -30,8 +35,8 @@ export class ResultLine extends React.Component {
       arg1: res.text[0],
       rel: res.text[1],
       arg2: res.text[2],
-      valid: false,
-      buttonText: "Validate",
+      valid: res.validity,
+      buttonText: (res.validity) ? "Discard" : "Validate",
     });
   }
 
@@ -43,16 +48,12 @@ export class ResultLine extends React.Component {
       valid: newValidity,
       buttonText: bText
     });
-    if (this.state.predictionType === "USER") {
-      // Do nothing
-    } else {
-      // Pass instance validity to parent
-      this.props.validateInstance({
-        pType: this.state.predictionType,
-        index: this.state.index,
-        validity: newValidity
-      });
-    }
+    // Pass instance validity to parent
+    this.props.validateInstance({
+      pType: this.state.predictionType,
+      index: this.state.index,
+      validity: newValidity
+    });
   }
 
   render() {
