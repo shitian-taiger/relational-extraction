@@ -94,7 +94,7 @@ class Base extends React.Component {
   // Reset everything once instances are confirmed
   confirmInstances = () => {
     instanceAdd(this.state.sentence, this.state.validInstances, this.state.invalidInstances)
-      .then((res) => console.log("Instances updated"))
+      .then((res) => console.log(res))
       .catch((err) => alert("Error: Instances not uploaded"));
     this.setState({
       sentence: "",

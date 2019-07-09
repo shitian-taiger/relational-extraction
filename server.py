@@ -52,56 +52,53 @@ def add_instances():
     connection = sqlite3.connect('./data/store.db')
     cursor = connection.cursor()
     # Arrays are not supported in SQLite3, map string keys to integer primary keys in corresponding tables
-    cursor.execute('create table if not exists {} (sentence_id INTEGER PRIMARY KEY, sentence TEXT, valid_keys STRING, invalid_keys STRING)'
+    cursor.execute('create table if not exists {} (sentence TEXT, valid_keys STRING, invalid_keys STRING, UNIQUE(sentence))'
                    .format(SENTENCE_TABLE))
-    cursor.execute('create table if not exists {} (instance_id PRIMARY KEY, entity1 TEXT, entity2 TEXT, rel TEXT)'
+    cursor.execute('create table if not exists {} (entity1 TEXT, entity2 TEXT, rel TEXT)'
                    .format(VALID_INSTANCES_TABLE))
-    cursor.execute('create table if not exists {} (instance_id PRIMARY KEY, entity1 TEXT, entity2 TEXT, rel TEXT)'
+    cursor.execute('create table if not exists {} (entity1 TEXT, entity2 TEXT, rel TEXT)'
                    .format(INVALID_INSTANCES_TABLE))
 
     # Store primary keys of instances to store in sentence table
     valid_instance_keys = []
     invalid_instance_keys = []
-    # Since we are unable to store arrays with SQLite3, indexes are comma joined and stringified
-    for instance in valid_instances:
-        cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"
-                       .format(VALID_INSTANCES_TABLE,
-                               "entity1", "entity2", "rel",
-                               quote_string(instance[0]), quote_string(instance[2]), quote_string(instance[1])))
-        valid_instance_keys.append(str(cursor.lastrowid))
-    for instance in invalid_instances:
-        cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"
-                       .format(INVALID_INSTANCES_TABLE,
-                               "entity1", "entity2", "rel",
-                               quote_string(instance[0]), quote_string(instance[2]), quote_string(instance[1])))
-        invalid_instance_keys.append(str(cursor.lastrowid))
-    # Insertion into Sentence Table
-    cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"
-                   .format(SENTENCE_TABLE,
-                           "sentence", "valid_keys", "invalid_keys",
-                           quote_string(sentence),
-                           quote_string(",".join(valid_instance_keys)),
-                           quote_string(",".join(invalid_instance_keys))
-                           )
-                   )
 
-    # VIEW TABLES
-    df = pd.read_sql_query("SELECT * FROM {}".format(SENTENCE_TABLE), connection)
-    print(df)
-    df = pd.read_sql_query("SELECT * FROM {}".format(VALID_INSTANCES_TABLE), connection)
-    print(df)
-    df = pd.read_sql_query("SELECT * FROM {}".format(INVALID_INSTANCES_TABLE), connection)
-    print(df)
+    # Check if sentence already exists in table
+    cursor.execute("SELECT * FROM {} WHERE sentence={}".format(SENTENCE_TABLE, quote_string(sentence)))
+    result = cursor.fetchone()
+    response = "" # Status of instances addition
+    if result:
+        response = "Sentence already in table"
+    else:
+        response = "Instances added"
+        # Since we are unable to store arrays with SQLite3, indexes are comma joined and stringified
+        for instance in valid_instances:
+            cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"
+                        .format(VALID_INSTANCES_TABLE,
+                                "entity1", "entity2", "rel",
+                                quote_string(instance[0]), quote_string(instance[2]), quote_string(instance[1])))
+            valid_instance_keys.append(str(cursor.lastrowid))
+        for instance in invalid_instances:
+            cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"
+                        .format(INVALID_INSTANCES_TABLE,
+                                "entity1", "entity2", "rel",
+                                quote_string(instance[0]), quote_string(instance[2]), quote_string(instance[1])))
+            invalid_instance_keys.append(str(cursor.lastrowid))
+        # Insertion into Sentence Table
+        cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"
+                    .format(SENTENCE_TABLE,
+                            "sentence", "valid_keys", "invalid_keys",
+                            quote_string(sentence),
+                            quote_string(",".join(valid_instance_keys)),
+                            quote_string(",".join(invalid_instance_keys))
+                            )
+                    )
 
     # Save changes and close connection
     connection.commit()
     connection.close()
     return jsonify({
-        "sentence": sentence,
-        "validInstances": valid_instances,
-        "invalidInstance": invalid_instances
-        }
-                   );
-
+        "response": response
+        });
 if __name__ == '__main__':
     app.run(port=8000, debug=True)
