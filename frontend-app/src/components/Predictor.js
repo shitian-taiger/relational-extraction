@@ -63,7 +63,7 @@ class SentenceInput extends React.Component {
     if(target.charCode === 13) { // `Enter` keycode
       fetcher(this.state.oie_predict_url, this.state.sentence)
         .then((res) => this.props.onResultReceived(this.state.sentence, res))
-        .catch((err) => alert("Server not up"));
+        .catch((err) => alert("Server Error"));
     }
   }
   handleSubmit(event) {

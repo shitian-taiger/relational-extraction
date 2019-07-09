@@ -54,9 +54,9 @@ def add_instances():
     # Arrays are not supported in SQLite3, map string keys to integer primary keys in corresponding tables
     cursor.execute('create table if not exists {} (sentence TEXT, valid_keys STRING, invalid_keys STRING, UNIQUE(sentence))'
                    .format(SENTENCE_TABLE))
-    cursor.execute('create table if not exists {} (entity1 TEXT, entity2 TEXT, rel TEXT)'
+    cursor.execute('create table if not exists {} (entity1 TEXT, rel TEXT, entity2 TEXT)'
                    .format(VALID_INSTANCES_TABLE))
-    cursor.execute('create table if not exists {} (entity1 TEXT, entity2 TEXT, rel TEXT)'
+    cursor.execute('create table if not exists {} (entity1 TEXT, rel TEXT, entity2 TEXT)'
                    .format(INVALID_INSTANCES_TABLE))
 
     # Store primary keys of instances to store in sentence table
@@ -76,13 +76,13 @@ def add_instances():
             cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"
                         .format(VALID_INSTANCES_TABLE,
                                 "entity1", "entity2", "rel",
-                                quote_string(instance[0]), quote_string(instance[2]), quote_string(instance[1])))
+                                quote_string(instance[0]), quote_string(instance[1]), quote_string(instance[2])))
             valid_instance_keys.append(str(cursor.lastrowid))
         for instance in invalid_instances:
             cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"
                         .format(INVALID_INSTANCES_TABLE,
                                 "entity1", "entity2", "rel",
-                                quote_string(instance[0]), quote_string(instance[2]), quote_string(instance[1])))
+                                quote_string(instance[0]), quote_string(instance[1]), quote_string(instance[2])))
             invalid_instance_keys.append(str(cursor.lastrowid))
         # Insertion into Sentence Table
         cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"

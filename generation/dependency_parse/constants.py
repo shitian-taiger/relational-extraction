@@ -13,6 +13,7 @@ class Relations:
     TEMPORAL_MODIFIER = "tmod"
     OPEN_CLAUSAL_COMPLEMENT = "xcomp"
     PASSIVE_NOM_SUBJECT = "nsubjpass"
+    POSSESSIVE = "possessive"
     POSSESSION_BY = "poss"
     PREPOSITION = "prep"
     PREPOSITIONAL_COMP = "pcomp"
