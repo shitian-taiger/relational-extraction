@@ -2,7 +2,7 @@
 .DS_Store
 .ipynb_checkpoints
 __pycache__/
-data/
+data
 brat_preprocessing/annotated
 generation/archived_models
 test_implementation/glove.6B

@@ -75,13 +75,13 @@ def add_instances():
         for instance in valid_instances:
             cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"
                         .format(VALID_INSTANCES_TABLE,
-                                "entity1", "entity2", "rel",
+                                "entity1", "rel", "entity2",
                                 quote_string(instance[0]), quote_string(instance[1]), quote_string(instance[2])))
             valid_instance_keys.append(str(cursor.lastrowid))
         for instance in invalid_instances:
             cursor.execute("INSERT INTO {} ({}, {}, {}) VALUES ({}, {}, {})"
                         .format(INVALID_INSTANCES_TABLE,
-                                "entity1", "entity2", "rel",
+                                "entity1", "rel", "entity2",
                                 quote_string(instance[0]), quote_string(instance[1]), quote_string(instance[2])))
             invalid_instance_keys.append(str(cursor.lastrowid))
         # Insertion into Sentence Table
