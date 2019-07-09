@@ -4,6 +4,7 @@ import Predictor from './components/Predictor';
 import Results from './components/Results';
 import { Button, Table, Container, Transition } from 'semantic-ui-react';
 import equal from 'fast-deep-equal';
+import _ from 'lodash';
 
 function App() {
 
@@ -74,7 +75,8 @@ class Base extends React.Component {
     for (let idx in this.state.nerOieResults) {
       if (validationArr.nerOie[idx] === validity) instances.push(this.state.nerOieResults[idx]);
     }
-    return instances;
+    // Remove duplicates
+    return _.uniqBy(instances, instance => instance[0] + instance[1] + instance[2]);
   }
   // Upon confirmation of instance validity from Results
   validationReceived = (validationArr, userInstances) => {
