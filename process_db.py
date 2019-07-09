@@ -66,6 +66,9 @@ def instance_to_iob(sentence: str, instance: Tuple):
     FIXME Improve robustness
     -- Assumptions:
        - Singular instance of entity and relation within sentence
+
+    Returns:
+       iob_instance: `\n` separated tokens with each row: <word_index>, <token>, <IOB-2 tag>
     """
     ent1, rel, ent2 = instance[0], instance[1], instance[2]
     args = [{"phrase": ent1, "tag": "ENT1", "idxs": (sentence.find(ent1), sentence.find(ent1) + len(ent1)) }, \
@@ -73,6 +76,7 @@ def instance_to_iob(sentence: str, instance: Tuple):
             {"phrase": ent2, "tag": "ENT2", "idxs": (sentence.find(ent2), sentence.find(ent2) + len(ent2))}]
     args.sort(key=lambda arg: arg["idxs"][0]) # Sort arguments by start index to facilitate tagging
 
+    # Separate sentence into phrases separated by `args`, tokenize and tag with `tag_phrase`
     start_index = 0
     instance = ""
     for arg in args:
@@ -81,11 +85,15 @@ def instance_to_iob(sentence: str, instance: Tuple):
             instance = "".join([instance, tag_phrase(out_phrase, "O")])
         instance = "".join([instance, tag_phrase(arg["phrase"], arg["tag"])])
         start_index = arg["idxs"][1]
-
     # Append last phrase
     out_phrase = sentence[start_index: len(sentence) - 1]
     instance = "".join([instance, tag_phrase(out_phrase, "O")])
-    return "\n".join(["", instance])
+
+    # Add word_index per token, skip the first element ""
+    iob_instance = []
+    for i, row, in enumerate(instance.split("\n")[1:-1]):
+        iob_instance.append("\t".join([str(i), row]))
+    return "\n".join(["\n".join(iob_instance), "", ""])
 
 
 if __name__ == "__main__":
