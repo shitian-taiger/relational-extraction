@@ -2,6 +2,7 @@ import React from 'react';
 import './App.css';
 import Predictor from './components/Predictor';
 import Results from './components/Results';
+import HelpModal from './components/help.js'
 import { Button, Table, Container, Transition, Popup, Icon } from 'semantic-ui-react';
 import equal from 'fast-deep-equal';
 import _ from 'lodash';
@@ -137,10 +138,8 @@ class Base extends React.Component {
   render() {
     return (
       <div className="App">
-        <Button onClick={this.downloadDb}>
-          Download DB
-        </Button>
-        <Popup content={this.state.DBINFO} trigger={<Icon name='info circle'/>} />
+        <Popup content={this.state.DBINFO} trigger={<Button floated='right' onClick={this.downloadDb}> Download DB </Button>} />
+        <HelpModal className="App-Help"/>
 
         {/* Pass onPredictionResult prop to Predictor for callback on retrieval */}
         <Predictor onPredictionResult={this.resultReceived}/>
