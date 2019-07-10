@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import React from 'react';
-import { Input, Button, Table } from 'semantic-ui-react';
+import { Input, Button, Table, Popup, Icon } from 'semantic-ui-react';
 import { ResultLine } from './ResultLine';
 import equal from 'fast-deep-equal';
 
@@ -212,6 +212,7 @@ class InstanceCreator extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      ADDRELINFO: "Please ensure arguments appear exactly as in sentence.",
       arg1Input: "",
       relInput: "",
       arg2Input: "",
@@ -263,7 +264,7 @@ class InstanceCreator extends React.Component {
   // Allow `Enter` keypress to simulate button clicking
   handleKeyPress = (target) => {
     if(target.charCode === 13) { // `Enter` keycode
-      this.addInstance()
+      this.addInstance();
     }
   }
 
@@ -286,6 +287,7 @@ class InstanceCreator extends React.Component {
           <Button onClick={() => this.addInstance()}>
             Add Relation
           </Button>
+          <Popup content={this.state.ADDRELINFO} trigger={<Icon name='info circle'/>} />
           <div style={{color: "Red"}}>{this.state.errorMessage}</div>
         </div>
     );

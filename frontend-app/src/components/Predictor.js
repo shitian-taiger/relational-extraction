@@ -47,10 +47,11 @@ class Predictor extends React.Component {
 class SentenceInput extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { sentence: "",
-                   oie_predict_url: IP + "/predict/all",
-                   oie_results: [],
-                 };
+    this.state = {
+      sentence: "",
+      oie_predict_url: IP + "/predict/all",
+      oie_results: [],
+    };
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);

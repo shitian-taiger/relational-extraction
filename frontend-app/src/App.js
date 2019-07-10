@@ -2,7 +2,7 @@ import React from 'react';
 import './App.css';
 import Predictor from './components/Predictor';
 import Results from './components/Results';
-import { Button, Table, Container, Transition } from 'semantic-ui-react';
+import { Button, Table, Container, Transition, Popup, Icon } from 'semantic-ui-react';
 import equal from 'fast-deep-equal';
 import _ from 'lodash';
 
@@ -39,6 +39,7 @@ class Base extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      DBINFO: "Remember to clear browser cache if recent downloads of DB are not updating",
       sentence: "",
       predictedResults: {},
       oieResults: [],
@@ -49,6 +50,10 @@ class Base extends React.Component {
       validInstances: [],
       invalidInstances: []
     };
+  }
+
+  componentDidMount(){
+    document.title = "Relational Extraction Data Generation";
   }
 
   // Retrieve sentence and predicted results from Predictor
@@ -135,6 +140,7 @@ class Base extends React.Component {
         <Button onClick={this.downloadDb}>
           Download DB
         </Button>
+        <Popup content={this.state.DBINFO} trigger={<Icon name='info circle'/>} />
 
         {/* Pass onPredictionResult prop to Predictor for callback on retrieval */}
         <Predictor onPredictionResult={this.resultReceived}/>
