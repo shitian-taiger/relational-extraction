@@ -91,7 +91,7 @@ def instance_to_iob(sentence: str, instance: Tuple):
 
     # Add word_index per token, skip the first element ""
     iob_instance = []
-    for i, row, in enumerate(instance.split("\n")[1:-1]):
+    for i, row, in enumerate(instance.split("\n")[1:]):
         iob_instance.append("\t".join([str(i), row]))
     return "\n".join(["\n".join(iob_instance), "", ""])
 

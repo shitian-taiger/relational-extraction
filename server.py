@@ -1,6 +1,7 @@
 import pandas as pd
 from flask_cors import CORS
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
+from pathlib import Path
 
 # Model
 from test_implementation.trainer import Trainer
@@ -25,6 +26,19 @@ ner_oie_generator = DataGenerator(use_allen = True)
 
 def quote_string(txt: str):
     return "\"" + txt + "\""
+
+@app.route('/db_download', methods=['GET'])
+def download_db():
+    # Allow error stacktrace here, handle in frontend
+    root = Path(__file__).parent
+    return send_file(str(Path.joinpath(root, "data/store.db")), cache_timeout=0)
+
+@app.route('/get_sentence', methods=['GET'])
+def get_sentence():
+    sentence = "This is a sample sentence test"
+    return jsonify({
+        "sentence": sentence
+    });
 
 @app.route('/predict/all', methods=['POST'])
 def predict_oie():
@@ -100,5 +114,6 @@ def add_instances():
     return jsonify({
         "response": response
         });
+
 if __name__ == '__main__':
-    app.run(port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True)

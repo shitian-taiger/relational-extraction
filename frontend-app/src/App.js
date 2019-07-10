@@ -6,6 +6,10 @@ import { Button, Table, Container, Transition } from 'semantic-ui-react';
 import equal from 'fast-deep-equal';
 import _ from 'lodash';
 
+// let IP = "http://192.168.86.101:8000";
+// let IP = "http://127.0.0.1:8000";
+let IP = "http://192.168.86.248:8000";
+
 function App() {
 
   return (
@@ -19,7 +23,7 @@ export default App;
 
 
 function instanceAdd(sentence, validInstances, invalidInstances) {
-  return fetch("http://127.0.0.1:8000/addinstances", {
+  return fetch(IP + "/addinstances", {
     method: 'POST',
     body: JSON.stringify({
       sentence: sentence,
@@ -108,9 +112,30 @@ class Base extends React.Component {
     });
   }
 
+  // Download the store as a Blob
+  downloadDb = (event) => {
+    fetch(IP + "/db_download", {method: 'GET'})
+      .then((response) => {
+        const reader = response.body.getReader();
+        reader.read().then( ({done, value}) => {
+          const blob = new Blob([value], {type: 'text/plain'});
+          const url = URL.createObjectURL(blob);
+          const dbDownload = document.createElement('a');
+          dbDownload.href = url;
+          dbDownload.download = 'store.db';
+          dbDownload.click(); // Manual trigger
+        });
+      })
+      .catch((err) => alert("Server Error"));
+  }
+
   render() {
     return (
       <div className="App">
+        <Button onClick={this.downloadDb}>
+          Download DB
+        </Button>
+
         {/* Pass onPredictionResult prop to Predictor for callback on retrieval */}
         <Predictor onPredictionResult={this.resultReceived}/>
 
