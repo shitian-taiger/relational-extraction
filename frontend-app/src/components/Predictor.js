@@ -1,5 +1,5 @@
 import React from 'react';
-import { Message, Button, Input } from 'semantic-ui-react';
+import { Message, Button, Input, Popup, Icon } from 'semantic-ui-react';
 
 // let IP = "http://192.168.86.101:8000";
 // let IP = "http://127.0.0.1:8000";
@@ -19,6 +19,7 @@ class Predictor extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      ARGSELECTINFO: "Highlight text and set as desired argument, `Add Relation` row below will be updated correspondinly (Note this only works for text within the current box)",
       sentence: "",
       selectedText: ""
     };
@@ -57,6 +58,7 @@ class Predictor extends React.Component {
           <Button size="mini" compact onClick={() => this.setHighlightedText("entity1")}>Entity 1</Button>
           <Button size="mini" compact onClick={() => this.setHighlightedText("relation")}>Relation</Button>
           <Button size="mini" compact onClick={() => this.setHighlightedText("entity2")}>Entity 2</Button>
+          <Popup content={this.state.ARGSELECTINFO} trigger={<Icon name='info circle'/>} />
           <p ref={this.sentenceDisplay}>{this.state.sentence}</p>
         </Message>
       </div>
