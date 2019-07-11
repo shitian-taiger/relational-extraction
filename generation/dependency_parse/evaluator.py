@@ -186,7 +186,7 @@ def vbroot_subj(root: Dict):
                     aux_relations.append([get_noun_phrase(conj)])
 
         # FIXME We assume for now that this case is mutually exclusive with first
-        if not conj_prep:
+        if not conj_prep and conj_obj: # Note conjunction object may not always be present
             nested_prep_relation = recursive_prep_search(conj_obj)
             if nested_prep_relation:
                 aux_relations.append([nested_prep_relation["relation"]])

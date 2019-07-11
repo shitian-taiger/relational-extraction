@@ -39,7 +39,8 @@ test_sentences = [
     "Lillian Lux, the Matriarch of YiThFa, a celebrated yiddish theatrical family, died on saturday at St. Vincent's hospital in Manhattan.",
     "Harry, an employee of Challenger, was recently married to Maryyane.",
     "Maryance, a waiter at Ohuia, is dead at 88 years old.",
-    "Hanky, a member of Mensa, is an astronaut aboard the OnalExpress."
+    "Hanky, a member of Mensa, is an astronaut aboard the OnalExpress.",
+    "Garry continued to practice law after the Jonestown incident, his clientele changed and his chance for further national acclaim had passed."
     ]
 
 
