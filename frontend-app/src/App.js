@@ -2,9 +2,14 @@ import React from 'react';
 import './App.css';
 import Predictor from './components/Predictor';
 import Results from './components/Results';
-import { Button, Table, Container, Transition } from 'semantic-ui-react';
+import HelpModal from './components/help.js'
+import { Button, Table, Container, Transition, Popup } from 'semantic-ui-react';
 import equal from 'fast-deep-equal';
 import _ from 'lodash';
+
+// let IP = "http://192.168.86.101:8000";
+// let IP = "http://127.0.0.1:8000";
+let IP = "http://192.168.86.248:8000";
 
 function App() {
 
@@ -19,7 +24,7 @@ export default App;
 
 
 function instanceAdd(sentence, validInstances, invalidInstances) {
-  return fetch("http://127.0.0.1:8000/addinstances", {
+  return fetch(IP + "/addinstances", {
     method: 'POST',
     body: JSON.stringify({
       sentence: sentence,
@@ -35,6 +40,7 @@ class Base extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      DBINFO: "Remember to clear browser cache if recent downloads of DB are not updating",
       sentence: "",
       predictedResults: {},
       oieResults: [],
@@ -43,8 +49,13 @@ class Base extends React.Component {
       resultsPresent: false,
       instancesGenerated: false,
       validInstances: [],
-      invalidInstances: []
+      invalidInstances: [],
+      highlightedArgs: {}
     };
+  }
+
+  componentDidMount(){
+    document.title = "Relational Extraction Data Generation";
   }
 
   // Retrieve sentence and predicted results from Predictor
@@ -60,6 +71,20 @@ class Base extends React.Component {
       oieResults: predictionResults.oie_prediction,
       nerOieResults: predictionResults.ner_oie_prediction,
       dpResults: predictionResults.dp_prediction
+    });
+  }
+
+  highlightTextSet = (type, text) => {
+    let highlightedArgs = this.state.highlightedArgs;
+    if (type === "entity1") {
+      highlightedArgs.entity1 = text;
+    } else if (type === "relation") {
+      highlightedArgs.relation = text;
+    } else if (type === "entity2") {
+      highlightedArgs.entity2 = text;
+    }
+    this.setState({
+      highlightedArgs: highlightedArgs
     });
   }
 
@@ -108,11 +133,34 @@ class Base extends React.Component {
     });
   }
 
+  // Download the store as a Blob
+  downloadDb = (event) => {
+    fetch(IP + "/db_download", {method: 'GET'})
+      .then((response) => {
+        const reader = response.body.getReader();
+        reader.read().then( ({done, value}) => {
+          const blob = new Blob([value], {type: 'text/plain'});
+          const url = URL.createObjectURL(blob);
+          const dbDownload = document.createElement('a');
+          dbDownload.href = url;
+          dbDownload.download = 'store.db';
+          dbDownload.click(); // Manual trigger
+        });
+      })
+      .catch((err) => alert("Server Error"));
+  }
+
   render() {
     return (
       <div className="App">
+        <Popup content={this.state.DBINFO} trigger={<Button floated='right' onClick={this.downloadDb}> Download DB </Button>} />
+        <HelpModal className="App-Help"/>
+
         {/* Pass onPredictionResult prop to Predictor for callback on retrieval */}
-        <Predictor onPredictionResult={this.resultReceived}/>
+        <Predictor
+          onPredictionResult={this.resultReceived}
+          onSetHighlighted={this.highlightTextSet}
+          />
 
         {/* Pass onValidated prop to Results for callback on user validation of results */}
         <Transition visible={this.state.resultsPresent && !this.state.instancesGenerated}
@@ -122,7 +170,9 @@ class Base extends React.Component {
             <Results
               sentence={this.state.sentence}
               onValidated={this.validationReceived}
-              results={this.state.predictedResults}/>
+              results={this.state.predictedResults}
+              highlightedArgs = {this.state.highlightedArgs}
+              />
           </Container>
         </Transition>
 

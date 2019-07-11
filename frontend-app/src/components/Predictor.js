@@ -1,8 +1,11 @@
 import React from 'react';
-import { Message, Button, Input } from 'semantic-ui-react';
+import { Message, Button, Input, Popup, Icon } from 'semantic-ui-react';
 
+// let IP = "http://192.168.86.101:8000";
+// let IP = "http://127.0.0.1:8000";
+let IP = "http://192.168.86.248:8000";
 
-function fetcher(url, sentenceToPredict) {
+function submitter(url, sentenceToPredict) {
   return fetch(url, {
     method: 'POST',
     body: JSON.stringify({
@@ -16,8 +19,33 @@ class Predictor extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      sentence: ""
+      ARGSELECTINFO: "Highlight text and set as desired argument, `Add Relation` row below will be updated correspondinly (Note this only works for text within the current box)",
+      sentence: "",
+      selectedText: ""
     };
+    this.textHighlightHandler = this.textHighlightHandler.bind(this);
+    this.sentenceDisplay = React.createRef();
+  }
+
+  // Adding of mouse up event listener for selection of highlighted text
+  componentDidMount() {
+    window.addEventListener('mouseup', this.textHighlightHandler);
+  }
+  textHighlightHandler(event) {
+    let sentenceNode = this.sentenceDisplay.current
+    let selectedText = window.getSelection().toString();
+    if (sentenceNode.contains(event.target) && !(selectedText === "")) {
+      this.setState({
+        selectedText: selectedText
+      })
+    }
+  }
+  componentWillUnmount() {
+    window.removeEventListener('mouseup', this.textHighlightHandler);
+  }
+
+  setHighlightedText(type) {
+    this.props.onSetHighlighted(type, this.state.selectedText.trim());
   }
 
   render() {
@@ -27,7 +55,11 @@ class Predictor extends React.Component {
         <SentenceInput onResultReceived={this.resultReceived}/>
         <Message style={{marginLeft: "30px", marginRight: "30px"}}>
           <Message.Header>Sentence</Message.Header>
-          <p>{this.state.sentence}</p>
+          <Button size="mini" compact onClick={() => this.setHighlightedText("entity1")}>Entity 1</Button>
+          <Button size="mini" compact onClick={() => this.setHighlightedText("relation")}>Relation</Button>
+          <Button size="mini" compact onClick={() => this.setHighlightedText("entity2")}>Entity 2</Button>
+          <Popup content={this.state.ARGSELECTINFO} trigger={<Icon name='info circle'/>} />
+          <p ref={this.sentenceDisplay}>{this.state.sentence}</p>
         </Message>
       </div>
     );
@@ -44,10 +76,11 @@ class Predictor extends React.Component {
 class SentenceInput extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { sentence: "Lexa Luthoror, an actress and singer in New York and around the world, died on saturday at St. Vincent's hospital in Manhattan.",
-                   oie_predict_url: "http://127.0.0.1:8000/predict/all",
-                   oie_results: [],
-                 };
+    this.state = {
+      sentence: "",
+      oie_predict_url: IP + "/predict/all",
+      oie_results: [],
+    };
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -61,16 +94,29 @@ class SentenceInput extends React.Component {
   // Allow `Enter` keypress to simulate button clicking
   handleKeyPress(target) {
     if(target.charCode === 13) { // `Enter` keycode
-      fetcher(this.state.oie_predict_url, this.state.sentence)
+      submitter(this.state.oie_predict_url, this.state.sentence)
         .then((res) => this.props.onResultReceived(this.state.sentence, res))
         .catch((err) => alert("Server Error"));
     }
   }
   handleSubmit(event) {
     event.preventDefault();
-    fetcher(this.state.oie_predict_url, this.state.sentence)
+    submitter(this.state.oie_predict_url, this.state.sentence)
       .then((res) => this.props.onResultReceived(this.state.sentence, res))
-      .catch((err) => alert("Server not up"));
+      .catch((err) => alert("Server Error"));
+  }
+
+  getNextSentence = (event) => {
+    event.preventDefault();
+    fetch(IP + "/get_sentence", {
+      method: 'GET',
+    })
+      .then((response) => response.json())
+      .then((responseJson) => {
+        this.setState({
+          sentence: responseJson.sentence
+        });
+      });
   }
 
   render() {
@@ -88,6 +134,10 @@ class SentenceInput extends React.Component {
         <Button style={{margin: "10px"}} onClick={this.handleSubmit} >
           Predict
         </Button>
+
+        <div>
+          <Button onClick={this.getNextSentence}> Get Random Unprocessed Sentence </Button>
+        </div>
       </div>
     );
   }
