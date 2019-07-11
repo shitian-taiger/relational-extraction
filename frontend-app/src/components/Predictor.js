@@ -26,6 +26,7 @@ class Predictor extends React.Component {
     this.sentenceDisplay = React.createRef();
   }
 
+  // Adding of mouse up event listener for selection of highlighted text
   componentDidMount() {
     window.addEventListener('mouseup', this.textHighlightHandler);
   }
@@ -38,9 +39,12 @@ class Predictor extends React.Component {
       })
     }
   }
+  componentWillUnmount() {
+    window.removeEventListener('mouseup', this.textHighlightHandler);
+  }
 
   setHighlightedText(type) {
-    this.props.onSetHighlighted(type, this.state.selectedText);
+    this.props.onSetHighlighted(type, this.state.selectedText.trim());
   }
 
   render() {
