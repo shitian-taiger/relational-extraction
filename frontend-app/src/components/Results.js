@@ -14,7 +14,8 @@ let initialState = {
   // Bitwise validity for user input
   validity: {oie: [], dp: [], nerOie: []},
   userInstances: [],
-  sentence: ""
+  sentence: "",
+  highlightedArgs: {}
 };
 
 class Results extends React.Component {
@@ -22,16 +23,22 @@ class Results extends React.Component {
     super(props);
     this.state = initialState;
     this.state.sentence = props.sentence;
+    this.instanceCreator = React.createRef();
   }
 
   // Updating of Prediction Results: Set result array and instantiate validity index
   // Also updates sentence
   componentDidUpdate(prevProps, prevState, snapshot) {
-    // Required since setState results in inf loop within componentDidUpdate
+    if (!equal(this.state.highlightedArgs, this.props.highlightedArgs)) {
+      // Direct function calls of children is not advisable, but we avoid calling this in
+      // Instance Creator's componentDidUpdate since it messes with argument text input fields
+      this.instanceCreator.current.updateArguments(this.props.highlightedArgs);
+    }
     if (!equal(this.props.results, prevProps.results)) {
       this.updatePredictionResults();
     }
   }
+
   updatePredictionResults() {
     let results = this.props.results;
     if (_.isEmpty(results)) {
@@ -196,8 +203,11 @@ class Results extends React.Component {
         </Table>
 
         <InstanceCreator
+          ref={this.instanceCreator}
           sentence={this.state.sentence}
-          instanceCreate={this.addInstance}/>
+          instanceCreate={this.addInstance}
+          highlightedArgs={this.state.highlightedArgs}
+          />
 
         <Button style={{margin: "15px"}} onClick={() => this.confirmValidations()}>
           Confirm Instances
@@ -216,7 +226,9 @@ class InstanceCreator extends React.Component {
       arg1Input: "",
       relInput: "",
       arg2Input: "",
-      sentence: props.sentence
+      inputChange: false,
+      sentence: props.sentence,
+      highlightedArgs: {}
     };
     this.handleArg1Change = this.handleArg1Change.bind(this);
     this.handleRelChange = this.handleRelChange.bind(this);
@@ -228,6 +240,23 @@ class InstanceCreator extends React.Component {
     if (!equal(this.props.sentence, prevProps.sentence)) {
       this.setState({
         sentence: this.props.sentence
+      });
+    }
+  }
+
+  // This is called directly by parent Results component, rationale as above
+  updateArguments(highlighted) {
+    if (!equal(this.state.arg1Input, highlighted.entity1)) {
+      this.setState({
+        arg1Input: highlighted.entity1
+      });
+    } else if (!equal(this.state.relInput, highlighted.relation)) {
+      this.setState({
+        relInput: highlighted.relation
+      });
+    } else if (!equal(this.state.arg2Input, highlighted.entity2)) {
+      this.setState({
+        arg2Input: highlighted.entity2
       });
     }
   }

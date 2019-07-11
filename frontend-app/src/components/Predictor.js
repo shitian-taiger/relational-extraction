@@ -19,8 +19,28 @@ class Predictor extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      sentence: ""
+      sentence: "",
+      selectedText: ""
     };
+    this.textHighlightHandler = this.textHighlightHandler.bind(this);
+    this.sentenceDisplay = React.createRef();
+  }
+
+  componentDidMount() {
+    window.addEventListener('mouseup', this.textHighlightHandler);
+  }
+  textHighlightHandler(event) {
+    let sentenceNode = this.sentenceDisplay.current
+    let selectedText = window.getSelection().toString();
+    if (sentenceNode.contains(event.target) && !(selectedText === "")) {
+      this.setState({
+        selectedText: selectedText
+      })
+    }
+  }
+
+  setHighlightedText(type) {
+    this.props.onSetHighlighted(type, this.state.selectedText);
   }
 
   render() {
@@ -30,7 +50,10 @@ class Predictor extends React.Component {
         <SentenceInput onResultReceived={this.resultReceived}/>
         <Message style={{marginLeft: "30px", marginRight: "30px"}}>
           <Message.Header>Sentence</Message.Header>
-          <p>{this.state.sentence}</p>
+          <Button size="mini" compact onClick={() => this.setHighlightedText("entity1")}>Entity 1</Button>
+          <Button size="mini" compact onClick={() => this.setHighlightedText("relation")}>Relation</Button>
+          <Button size="mini" compact onClick={() => this.setHighlightedText("entity2")}>Entity 2</Button>
+          <p ref={this.sentenceDisplay}>{this.state.sentence}</p>
         </Message>
       </div>
     );

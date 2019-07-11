@@ -3,7 +3,7 @@ import './App.css';
 import Predictor from './components/Predictor';
 import Results from './components/Results';
 import HelpModal from './components/help.js'
-import { Button, Table, Container, Transition, Popup, Icon } from 'semantic-ui-react';
+import { Button, Table, Container, Transition, Popup } from 'semantic-ui-react';
 import equal from 'fast-deep-equal';
 import _ from 'lodash';
 
@@ -49,7 +49,8 @@ class Base extends React.Component {
       resultsPresent: false,
       instancesGenerated: false,
       validInstances: [],
-      invalidInstances: []
+      invalidInstances: [],
+      highlightedArgs: {}
     };
   }
 
@@ -70,6 +71,20 @@ class Base extends React.Component {
       oieResults: predictionResults.oie_prediction,
       nerOieResults: predictionResults.ner_oie_prediction,
       dpResults: predictionResults.dp_prediction
+    });
+  }
+
+  highlightTextSet = (type, text) => {
+    let highlightedArgs = this.state.highlightedArgs;
+    if (type === "entity1") {
+      highlightedArgs.entity1 = text;
+    } else if (type === "relation") {
+      highlightedArgs.relation = text;
+    } else if (type === "entity2") {
+      highlightedArgs.entity2 = text;
+    }
+    this.setState({
+      highlightedArgs: highlightedArgs
     });
   }
 
@@ -142,7 +157,10 @@ class Base extends React.Component {
         <HelpModal className="App-Help"/>
 
         {/* Pass onPredictionResult prop to Predictor for callback on retrieval */}
-        <Predictor onPredictionResult={this.resultReceived}/>
+        <Predictor
+          onPredictionResult={this.resultReceived}
+          onSetHighlighted={this.highlightTextSet}
+          />
 
         {/* Pass onValidated prop to Results for callback on user validation of results */}
         <Transition visible={this.state.resultsPresent && !this.state.instancesGenerated}
@@ -152,7 +170,9 @@ class Base extends React.Component {
             <Results
               sentence={this.state.sentence}
               onValidated={this.validationReceived}
-              results={this.state.predictedResults}/>
+              results={this.state.predictedResults}
+              highlightedArgs = {this.state.highlightedArgs}
+              />
           </Container>
         </Transition>
 
