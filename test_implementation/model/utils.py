@@ -20,13 +20,14 @@ class LSTM_Direction(Enum):
 
 class Vocabulary:
 
-    def __init__(self, words=[]):
+    def __init__(self, vocab_dir: str, words=[]):
         # Bidirectional mapping of words of indexes
-        self.word_to_idx, self.idx_to_word = self.instantiate(words)
+        self.word_to_idx, self.idx_to_word = self._instantiate(words)
         self.vocab_len = len(self.idx_to_word)
+        self.load_from_dir(vocab_dir)
 
 
-    def instantiate(self, words: List):
+    def _instantiate(self, words: List):
         word_idx_map: Dict = {}
         idx_word_map: List = []
 
@@ -52,11 +53,9 @@ class Vocabulary:
             self.vocab_len = self.vocab_len + 1
 
 
-    def load_from_dir(self):
+    def load_from_dir(self, vocab_dir):
         # Loads vocabulary tokens directly from file
         tokens = "tokens.txt"
-        cwd = Path(__file__).parent.parent
-        vocab_dir = Path.joinpath(cwd, "vocab")
         with open(Path.joinpath(vocab_dir, tokens)) as v:
             for line in v:
                 if "@@UNKNOWN" in line: # Ignore UNK tag from Allen, already present in constants
@@ -77,17 +76,15 @@ class Vocabulary:
 
 class Labels:
     # Mirror of Vocabulary for Labels
-    def __init__(self):
+    def __init__(self, labels_dir: str):
         self.labels_len = 0
         self.tag_to_idx: Dict = {}
         self.idx_to_tag = {}
-        self.load_from_dir()
+        self.load_from_dir(labels_dir)
 
-    def load_from_dir(self):
+    def load_from_dir(self, labels_dir):
         # Loads vocabulary tokens directly from file
         labels = "labels.txt"
-        cwd = Path(__file__).parent.parent
-        labels_dir = Path.joinpath(cwd, "vocab")
         with open(Path.joinpath(labels_dir, labels)) as l:
             for line in l:
                 self.add_word(line.split("\n")[0])

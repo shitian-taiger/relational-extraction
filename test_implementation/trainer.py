@@ -3,11 +3,11 @@ import torch
 from torch.nn.utils.rnn import pack_padded_sequence
 
 from typing import Tuple, Dict, List
-from .model.decoder import Decoder
-from .model.model import REModel
-from .model.utils import *
+from model.decoder import Decoder
+from model.model import REModel
+from model.utils import *
 
-from .data_utils import get_tokens_oie
+from data_utils import get_tokens_oie
 
 class Trainer:
 
@@ -19,16 +19,18 @@ class Trainer:
                 -- hidden_size: LSTM hidden state
                 -- highway: Highway connections in LSTM
                 -- layers: Number of LSTM layers
+                -- custom_weights: File path to weights
+                -- custom_vocab: File path to vocabulary and labels
+                -- custom_embedding: File path to embedding
                 -- embedding_dim: Dimension of word embedding
-                -- num_classes: Corresponds to output IOB2 tags
+                -- num_classes: Corresponds to types of output IOB2 tags
 
             training_config: Training Configurations including batch_size etc
         """
 
-        self.vocab = Vocabulary()
-        self.vocab.load_from_dir()
+        self.vocab = Vocabulary(model_config["vocab_dir"])
         model_config["num_embeddings"] = self.vocab.vocab_len
-        self.labels = Labels()
+        self.labels = Labels(model_config["vocab_dir"])
         self.model = REModel(model_config)
         self.preprocessor = Preprocessor(self.vocab, self.labels)
         self.decoder = Decoder(self.vocab, self.labels)

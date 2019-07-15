@@ -8,6 +8,15 @@ from .h_d_lstm import CustomLSTM
 
 class REModel(torch.nn.Module):
 
+    """
+    Bi-LSTM model: 1 to 1 tagging
+
+    Tokenized Input -> Token/Verb Embeddings -> Bi-LSTM -> Tag Embeddings
+
+      -- Tag Embeddings: n-dim Vector to logits per Bi-LSTM token output
+      -- Logits require further processing in Decoder
+    """
+
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -18,11 +27,11 @@ class REModel(torch.nn.Module):
 
 
     def _load_embeddings(self, num_embeddings, embedding_dim):
-        cwd = Path(__file__).parent.parent
-        token_emb_weights = torch.load(Path.joinpath(cwd, "weights/token_embedder"))
-        verb_emb_weights = torch.load(Path.joinpath(cwd, "weights/verb_embedder"))
+        embedding_dir = self.config["embedding_dir"]
+        token_emb_weights = torch.load(Path.joinpath(embedding_dir, "token_embedder"))
+        verb_emb_weights = torch.load(Path.joinpath(embedding_dir, "verb_embedder"))
         self.token_embedding = torch.nn.Embedding(num_embeddings, embedding_dim,
-                                            constants.PAD_INDEX, _weight=token_emb_weights)
+                                                  constants.PAD_INDEX, _weight=token_emb_weights)
         self.verb_embedding = torch.nn.Embedding(2, embedding_dim, _weight=verb_emb_weights)
 
 
@@ -36,18 +45,19 @@ class REModel(torch.nn.Module):
             direction = LSTM_Direction.forward if layer_index % 2 == 0 else LSTM_Direction.backward
             self.config["direction"] = direction
             layer = CustomLSTM(self.config) # Pass configuration to LSTM
-            self._load_layer_weights(layer, layer_index) # Load in custom weights for layers
+            if self.config["weights_dir"]:
+                self._load_layer_weights(layer, layer_index) # Load in custom weights for layers
             self.lstm_layers.append(layer)
             self.add_module("lstm_layer{}".format(layer_index), layer) # Registration of parameter under model
-            self.config["input_size"] = hidden_size # Change input size of layers 2 - 8
+            self.config["input_size"] = hidden_size # Change input size of layers 2 to n
 
 
     def _load_layer_weights(self, layer: CustomLSTM, layer_num: int):
-        cwd = Path(__file__).parent.parent
-        input_weights: Tensor = torch.load(Path.joinpath(cwd, "weights/layer{}_input_weight".format(layer_num)))
-        input_bias: Tensor = torch.load(Path.joinpath(cwd, "weights/layer{}_input_bias".format(layer_num)))
-        state_weights: Tensor = torch.load(Path.joinpath(cwd, "weights/layer{}_state_weight".format(layer_num)))
-        state_bias: Tensor = torch.load(Path.joinpath(cwd, "weights/layer{}_state_bias".format(layer_num)))
+        weights_dir = self.config["weights_dir"]
+        input_weights: Tensor = torch.load(Path.joinpath(weights_dir, "layer{}_input_weight".format(layer_num)))
+        input_bias: Tensor = torch.load(Path.joinpath(weights_dir, "layer{}_input_bias".format(layer_num)))
+        state_weights: Tensor = torch.load(Path.joinpath(weights_dir, "layer{}_state_weight".format(layer_num)))
+        state_bias: Tensor = torch.load(Path.joinpath(weights_dir, "layer{}_state_bias".format(layer_num)))
         layer.load_weights(input_weights,
                            input_bias,
                            state_weights,
@@ -55,15 +65,16 @@ class REModel(torch.nn.Module):
 
 
     def _load_tag_layer(self):
-        cwd = Path(__file__).parent.parent
-        tag_layer_weights: Tensor = torch.load(Path.joinpath(cwd, "weights/tag_layer_weights"))
-        tag_layer_bias: Tensor = torch.load(Path.joinpath(cwd, "weights/tag_layer_bias"))
         self.tag_layer = torch.nn.Linear(self.config["hidden_size"], self.config["num_classes"])
-        self.tag_layer.weight = tag_layer_weights
-        self.tag_layer.bias = tag_layer_bias
+        if self.config["weights_dir"]:
+            weights_dir = self.config["weights_dir"]
+            tag_layer_weights: Tensor = torch.load(Path.joinpath(weights_dir, "tag_layer_weights"))
+            tag_layer_bias: Tensor = torch.load(Path.joinpath(weights_dir, "tag_layer_bias"))
+            self.tag_layer.weight = tag_layer_weights
+            self.tag_layer.bias = tag_layer_bias
 
 
-    def sort_and_pack_embeddings(self, full_embeddings: Tensor, lengths: List):
+    def _sort_and_pack_embeddings(self, full_embeddings: Tensor, lengths: List):
         """
         Sorts instances of sentences, predicates based on length (Longest --> Shortest)
         Returns:
@@ -81,7 +92,7 @@ class REModel(torch.nn.Module):
         return pack_padded_sequence(sorted_embeddings, sorted_lengths, batch_first=True), original_order
 
 
-    def unpack_and_reorder(self, packed_output: PackedSequence, original_order: List[int]):
+    def _unpack_and_reorder(self, packed_output: PackedSequence, original_order: List[int]):
         """
         Unpacks packed sequence and reorders according to original index
         """
@@ -93,7 +104,7 @@ class REModel(torch.nn.Module):
         return torch.stack(sorted_tensors)
 
 
-    def get_output_dict(self, output_tensors: Tensor, mask: Tensor):
+    def _get_output_dict(self, output_tensors: Tensor, mask: Tensor):
         """
         For each time step of the output, apply tag_layer to obtain logits for tag classification
             - `TimeDistributed` class not available in Pytorch, imitate functionality
@@ -121,8 +132,8 @@ class REModel(torch.nn.Module):
         embedded_verbs = self.verb_embedding(pred_vec)
         full_embeddings = torch.cat([embedded_sentences, embedded_verbs], dim=-1)
 
-        # Sort and pack padded sequence
-        packed, original_order = self.sort_and_pack_embeddings(full_embeddings, input_dict["lengths"])
+        # Sort and pack padded sequence (pytorch default api requires that sequences be sorted)
+        packed, original_order = self._sort_and_pack_embeddings(full_embeddings, input_dict["lengths"])
 
         hidden_states = [None] * len(self.lstm_layers)
         output_sequence: PackedSequence = packed
@@ -130,17 +141,17 @@ class REModel(torch.nn.Module):
             layer = self.lstm_layers[i]
             output_sequence, _ = layer(output_sequence, state) # Ignore final state of lstm layer
 
-        output_tensors = self.unpack_and_reorder(output_sequence, original_order)
-        output_dict = self.get_output_dict(output_tensors, input_dict["mask"]) # Class probabilities to be decoded
+        output_tensors = self._unpack_and_reorder(output_sequence, original_order)
+        output_dict = self._get_output_dict(output_tensors, input_dict["mask"]) # Class probabilities to be decoded
 
         if self.train:
-            loss = self.compute_loss(output_dict["logits"], input_dict["tags_vec"], input_dict["mask"])
+            loss = self._compute_loss(output_dict["logits"], input_dict["tags_vec"], input_dict["mask"])
             output_dict["loss"] = loss
 
         return output_dict
 
 
-    def compute_loss(self, logits: Tensor, tags: Tensor, mask: Tensor) -> Tensor:
+    def _compute_loss(self, logits: Tensor, tags: Tensor, mask: Tensor) -> Tensor:
         """
         Computes log-softmax loss, mask is required for omitting of padding for variable length sequences
         """
