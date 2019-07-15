@@ -2,7 +2,7 @@ import React from 'react';
 import './App.css';
 import Predictor from './components/Predictor';
 import Results from './components/Results';
-import HelpModal from './components/help.js'
+import HelpModal from './components/help.js';
 import { Button, Table, Container, Transition, Popup } from 'semantic-ui-react';
 import equal from 'fast-deep-equal';
 import _ from 'lodash';

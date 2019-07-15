@@ -45,11 +45,25 @@ def get_sentence():
     # Get from database a random sentence which is not yet processed
     connection = sqlite3.connect('./data/store.db')
     cursor = connection.cursor()
-    cursor.execute('SELECT * FROM {} WHERE processed=0 LIMIT 10'.format(SENTENCE_TABLE))
+    cursor.execute('SELECT * FROM {} WHERE processed=0 AND length(sentence)<250 and skip=0 LIMIT 15'.format(SENTENCE_TABLE))
     sentence_rows = cursor.fetchall()
     sentence = random.choice(sentence_rows)[0] if sentence_rows else ""
     return jsonify({
         "sentence": sentence
+    });
+
+
+# We allow a sentence to be marked as skipped due to ambiguity or lack of Named Entity
+@app.route('/skip_sentence', methods=['POST'])
+def skip_sentence():
+    data = request.get_json(force=True)
+    sentence = data["sentence"]
+    # Set sentence as skipped
+    connection = sqlite3.connect('./data/store.db')
+    cursor = connection.cursor()
+    cursor.execute("UPDATE {} SET skip=1 WHERE sentence={}".format(SENTENCE_TABLE, quote_string(sentence)))
+    return jsonify({
+        "message": "Set skipped on sentence".format(sentence)
     });
 
 
@@ -84,6 +98,9 @@ def add_instances():
                    .format(VALID_INSTANCES_TABLE))
     cursor.execute('CREATE TABLE IF NOT EXISTS {} (entity1 TEXT, rel TEXT, entity2 TEXT)'
                    .format(INVALID_INSTANCES_TABLE))
+
+    # cursor.execute("DELETE FROM Sentence WHERE SUBSTR(sentence, 1, 2) = 'He' OR SUBSTR(sentence, 1, 3) = 'She' OR SUBSTR(sentence, 1, 3) = 'His' OR SUBSTR(sentence, 1, 3) = 'Her'")
+
 
     # Store primary keys of instances to store in sentence table
     valid_instance_keys = []
@@ -127,4 +144,4 @@ def add_instances():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=False)

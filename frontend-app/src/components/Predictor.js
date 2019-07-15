@@ -32,12 +32,12 @@ class Predictor extends React.Component {
     window.addEventListener('mouseup', this.textHighlightHandler);
   }
   textHighlightHandler(event) {
-    let sentenceNode = this.sentenceDisplay.current
+    let sentenceNode = this.sentenceDisplay.current;
     let selectedText = window.getSelection().toString();
     if (sentenceNode.contains(event.target) && !(selectedText === "")) {
       this.setState({
         selectedText: selectedText
-      })
+      });
     }
   }
   componentWillUnmount() {
@@ -119,6 +119,22 @@ class SentenceInput extends React.Component {
       });
   }
 
+  skipSentence = (event) => {
+    fetch(IP + "/skip_sentence", {
+      method: 'POST',
+      body: JSON.stringify({
+        sentence: this.state.sentence
+      }),
+    })
+      .then((response) => response.json())
+      .then((responseJson) => {
+        this.setState({
+          sentence: "" // Reset sentence since we marked it as skip
+        });
+        console.log(responseJson);
+      });
+  }
+
   render() {
     return (
       <div className="SentenceInput">
@@ -133,6 +149,10 @@ class SentenceInput extends React.Component {
                onChange={this.handleChange} />
         <Button style={{margin: "10px"}} onClick={this.handleSubmit} >
           Predict
+        </Button>
+
+        <Button style={{margin: "5px"}} onClick={this.skipSentence}>
+        Skip Sentence
         </Button>
 
         <div>
