@@ -120,7 +120,7 @@ class Base extends React.Component {
   confirmInstances = () => {
     instanceAdd(this.state.sentence, this.state.validInstances, this.state.invalidInstances)
       .then((res) => console.log(res))
-      .catch((err) => alert("Error: Instances not uploaded"));
+      .catch((err) => alert("Error: Server error: Instances not uploaded"));
     this.setState({
       sentence: "",
       predictedResults: {},

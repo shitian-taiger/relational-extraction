@@ -40,7 +40,8 @@ test_sentences = [
     "Harry, an employee of Challenger, was recently married to Maryyane.",
     "Maryance, a waiter at Ohuia, is dead at 88 years old.",
     "Hanky, a member of Mensa, is an astronaut aboard the OnalExpress.",
-    "Garry continued to practice law after the Jonestown incident, his clientele changed and his chance for further national acclaim had passed."
+    "Garry continued to practice law after the Jonestown incident, his clientele changed and his chance for further national acclaim had passed.",
+    "Avram Noam Chomsky was born on December 7, 1928, in the East Oak Lane neighborhood of Philadelphia, Pennsylvania."
     ]
 
 

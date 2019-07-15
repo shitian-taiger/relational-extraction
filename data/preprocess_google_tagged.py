@@ -47,7 +47,11 @@ def process_file(file_path: str):
                                 0 # Signify unprocessed sentence
                                 )
                             )
-    # Commit and close connection to database
+    # Due to the format of GoogleTagged sentences, highly unlikely for sentences
+    # beginning with subject pronouns to contain Named Entities
+    cursor.execute("DELETE FROM Sentence WHERE SUBSTR(sentence, 1, 2) = 'He' OR SUBSTR(sentence, 1, 3) = 'She'
+    OR SUBSTR(sentence, 1, 3) = 'His' OR SUBSTR(sentence, 1, 3) = 'Her'")
+
     connection.commit()
     connection.close()
 
