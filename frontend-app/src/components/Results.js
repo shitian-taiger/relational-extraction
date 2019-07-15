@@ -247,17 +247,13 @@ class InstanceCreator extends React.Component {
   // This is called directly by parent Results component, rationale as above
   updateArguments(highlighted) {
     if (!equal(this.state.arg1Input, highlighted.entity1)) {
-      this.setState({
-        arg1Input: highlighted.entity1
-      });
-    } else if (!equal(this.state.relInput, highlighted.relation)) {
-      this.setState({
-        relInput: highlighted.relation
-      });
-    } else if (!equal(this.state.arg2Input, highlighted.entity2)) {
-      this.setState({
-        arg2Input: highlighted.entity2
-      });
+      this.setState({arg1Input: highlighted.entity1});
+    }
+    if (!equal(this.state.relInput, highlighted.relation)) {
+      this.setState({relInput: highlighted.relation});
+    }
+    if (!equal(this.state.arg2Input, highlighted.entity2)) {
+      this.setState({arg2Input: highlighted.entity2});
     }
   }
 
