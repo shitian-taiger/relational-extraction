@@ -36,7 +36,8 @@ def quote_string(txt: str):
 @app.route('/db_download', methods=['GET'])
 def download_db():
     # Allow error stacktrace here, handle in frontend
-    root = Path(__file__).parent
+    root = Path(__file__).parent.resolve()
+    print(Path.joinpath(root, "data/store.db"))
     return send_file(str(Path.joinpath(root, "data/store.db")), cache_timeout=0)
 
 
@@ -98,9 +99,6 @@ def add_instances():
                    .format(VALID_INSTANCES_TABLE))
     cursor.execute('CREATE TABLE IF NOT EXISTS {} (entity1 TEXT, rel TEXT, entity2 TEXT)'
                    .format(INVALID_INSTANCES_TABLE))
-
-    # cursor.execute("DELETE FROM Sentence WHERE SUBSTR(sentence, 1, 2) = 'He' OR SUBSTR(sentence, 1, 3) = 'She' OR SUBSTR(sentence, 1, 3) = 'His' OR SUBSTR(sentence, 1, 3) = 'Her'")
-
 
     # Store primary keys of instances to store in sentence table
     valid_instance_keys = []

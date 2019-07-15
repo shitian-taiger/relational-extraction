@@ -88,7 +88,8 @@ class SentenceInput extends React.Component {
   }
 
   handleChange(event) {
-    this.setState({sentence: event.target.value});
+    let sentence = event.target.value.replace(/\"/g, "'");
+    this.setState({sentence: sentence});
   }
 
   // Allow `Enter` keypress to simulate button clicking
