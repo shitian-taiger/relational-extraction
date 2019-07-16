@@ -25,7 +25,8 @@ def process_db(filename):
     instance_cursor = connection.cursor()
 
     iob_file = open(filename, "a+")
-    sentence_cursor.execute('SELECT * FROM {} WHERE processed=1'.format(SENTENCE_TABLE)) # Select only processed sentence instances
+    # Select only processed sentence instances
+    sentence_cursor.execute('SELECT * FROM {} WHERE processed=1 AND LENGTH(valid_keys) > 0'.format(SENTENCE_TABLE))
     for row in sentence_cursor:
         sentence = row[0]
         valid_keys = [row[1]] if isinstance(row[1], int) else [int(x) for x in row[1].split(',')]
