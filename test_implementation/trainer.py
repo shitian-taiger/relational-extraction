@@ -71,13 +71,20 @@ class Trainer:
 
 
     def predict(self, sentence: str):
+        """
+        Prediction for sentence, not applicable for training
+        Returns list of string (tri)tuples of <ent, rel, ent>
+        """
         self.model.train = False
         vectorized_sentence = self.preprocessor.vectorize_sentence(sentence)[0]["sent_vec"]
         model_input = self.preprocess_batch_tagless([sentence])
         output = self.model(model_input)
         output_tags = self.decoder.decode(output)["tags"]
-        rel_tuples: Tuple = self._parse_tags( {"tags_list": output_tags, # Mutiple tag ouputs possible per sentence
-                                              "sent_vec": vectorized_sentence} )
+        # Tuples of token indexes
+        rel_tuples: List[Tuple] = self._parse_tags({
+            "tokens": self.preprocessor.tokenize(sentence), # For getting token with UNK tag
+            "tags_list": output_tags, # Mutiple tag ouputs possible per sentence
+            "sent_vec": vectorized_sentence})
         return rel_tuples
 
 
@@ -99,29 +106,31 @@ class Trainer:
         tuples: List[Tuple] = []
         for tags in tags_list:
             tags_iter = iter(tags)
+            # We store the word_index together with array index for retrieval of the original word in
+            # the case of UNK tags
             pre_rel_args, rel, post_rel_args = [], [], []
             rel_found = False
             curr_index = 0
             for tag in tags_iter:
                 # Beginning of Verb or verbial modifier, append all tags till we hit `B-V`
                 if tag == "B-V" or tag == "B-BV":
-                    rel.append(sentence_vector[curr_index])
-                    curr_index += 1
+                    rel.append((sentence_vector[curr_index], curr_index))
+                    curr_index += 1 if (curr_index < len(tags) - 1) else 0
                     next_tag = tags[curr_index]
-                    while (not tag == "B-V" and not next_tag == "B-V"):
+                    while (not tag == "B-V" and not next_tag == "B-V") and curr_index < (len(tags) - 1):
                         next(tags_iter)
-                        rel.append(sentence_vector[curr_index])
-                        curr_index += 1
+                        rel.append((sentence_vector[curr_index], curr_index))
+                        curr_index = curr_index + 1 if curr_index < len(tags) else curr_index
                         next_tag = tags[curr_index]
                     rel_found = True
                 # Beginning of ARG, append until next tag is not an I-tag
                 elif re.search("B-", tag):
-                    arg: List = [sentence_vector[curr_index]]
-                    curr_index += 1
+                    arg: List = [(sentence_vector[curr_index], curr_index)]
+                    curr_index += 1 if (curr_index < len(tags) - 1) else 0
                     next_tag = tags[curr_index]
-                    while re.search("I-", next_tag):
+                    while re.search("I-", next_tag) and curr_index < (len(tags) - 1):
                         next(tags_iter)
-                        arg.append(sentence_vector[curr_index])
+                        arg.append((sentence_vector[curr_index], curr_index))
                         curr_index += 1
                         next_tag = tags[curr_index]
                     if rel_found:
@@ -134,16 +143,18 @@ class Trainer:
             # Translate all tupled word indexes phrases
             for pre_arg in pre_rel_args:
                 for post_arg in post_rel_args:
-                    tuples.append((self._get_phrase(pre_arg), self._get_phrase(rel), self._get_phrase(post_arg)))
+                    tuples.append((self._get_phrase(pre_arg, output_dict["tokens"]),
+                                   self._get_phrase(rel, output_dict["tokens"]),
+                                   self._get_phrase(post_arg, output_dict["tokens"])))
         return tuples
 
 
-    def _get_phrase(self, token_indexes: List):
+    def _get_phrase(self, token_indexes: List, sentence_tokens: List):
         # Given list of token indexes, map indexes to dictionary and join them according to punctuation
         phrase = ""
         hyphen = False
-        for token_index in token_indexes:
-            word = self.vocab.idx_to_word[token_index]
+        for token_index, arr_index in token_indexes:
+            word = self.vocab.idx_to_word[token_index] if token_index > 1 else sentence_tokens[arr_index].text
             if re.search("'", word) or re.search(",", word):
                 phrase = "".join([phrase, word])
             elif re.search("-", word):
@@ -152,7 +163,7 @@ class Trainer:
                 phrase = "".join([phrase, word])
                 hyphen = False
             else:
-                phrase = " ".join([phrase, word])
+                phrase = " ".join([phrase, word]) if phrase else word
         return phrase
 
 

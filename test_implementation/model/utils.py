@@ -118,7 +118,6 @@ class Preprocessor:
         self.vocab = vocab
         self.labels = labels
 
-
     def vectorize_sentence(self, sentence: str) -> List[Dict]:
         """
         Tokenizes and indexes sentences based on given vocabulary
@@ -195,17 +194,19 @@ class Preprocessor:
                     instance_lengths, Tensor(mask))
 
 
+    def tokenize(self, sentence: str):
+        # Tokenize sentence to spacy Tokens including POS tags (pos_)
+        return self.spacy_nlp(sentence)
+
+
     def _pair_sentence_pred(self, sentence: str) -> List[Dict]:
         """
         Tokenizes sentence, giving multiple instances of paired sentence with predicate index
         Returns: List[{ "tokens": <Spacy Tokens>, "pred_index": int }]
         """
-        tokens = self._tokenize(sentence)
+        tokens = self.tokenize(sentence)
         predicate_indexes = [i for (i, t) in enumerate(tokens) if t.pos_ == "VERB"] # Get all indexes with predicates
         return [ {"tokens": tokens, "pred_index": idx } for idx in predicate_indexes ]
 
 
-    def _tokenize(self, sentence: str):
-        # Tokenize sentence to spacy Tokens including POS tags (pos_)
-        return self.spacy_nlp(sentence)
 

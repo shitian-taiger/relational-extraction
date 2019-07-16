@@ -2,6 +2,7 @@ import shutil
 import urllib.request
 import zipfile
 import torch
+import numpy as np
 from pathlib import Path
 from allennlp.models.archival import Archive, load_archive
 from allennlp.predictors.predictor import Predictor
@@ -10,25 +11,40 @@ from allennlp.predictors.predictor import Predictor
 impl_dir = Path(__file__).parent.resolve()
 
 # Download GLOVE embeddings and generate tokens.txt file
-# glove_url = "http://nlp.stanford.edu/data/glove.6B.zip"
-# glove_zip_path = Path.joinpath(impl_dir, "glove.6B.zip")
-# glove_dir_path = Path.joinpath(impl_dir, "glove.6B")
-# glove_dir_path.mkdir(parents=True, exist_ok=True)
-# if not Path(glove_zip_path).exists():
-#     print("Downloading GLOVE embeddings")
-#     urllib.request.urlretrieve(glove_url, glove_zip_path)
-# with zipfile.ZipFile(glove_zip_path,"r") as zip_ref:
-#     zip_ref.extractall(glove_dir_path)
+glove_url = "http://nlp.stanford.edu/data/glove.6B.zip"
+glove_zip_path = Path.joinpath(impl_dir, "glove.6B.zip")
+glove_dir_path = Path.joinpath(impl_dir, "glove.6B")
+glove_dir_path.mkdir(parents=True, exist_ok=True)
 
-# print(glove_dir_path)
-# embedding_filepath = Path.joinpath(glove_dir_path, 'glove.6B.100d.txt')
-# token_filepath = Path.joinpath(glove_dir_path, 'tokens.txt')
-# token_file = open(token_filepath, "a+")
-# with open(embedding_filepath) as emb_file: # Read tokens only and write to tokens file
-#     for line in emb_file:
-#         token = line.split(' ', 1)[0]
-#         token_file.write(token + "\n")
-# token_file.close()
+# Download and unzip if not present
+if not Path(glove_dir_path).exists():
+    if not Path(glove_zip_path).exists():
+        print("Downloading GLOVE embeddings")
+        urllib.request.urlretrieve(glove_url, glove_zip_path)
+    with zipfile.ZipFile(glove_zip_path,"r") as zip_ref:
+        zip_ref.extractall(glove_dir_path)
+
+# Write tokens to file
+print("Extracting GLOVE tokens and embeddings")
+embedding_filepath = Path.joinpath(glove_dir_path, 'glove.6B.100d.txt')
+token_filepath = Path.joinpath(glove_dir_path, 'tokens.txt')
+token_file = open(token_filepath, "a+")
+embedding_vectors = []
+with open(embedding_filepath) as emb_file: # Read tokens only and write to tokens file
+    for line in emb_file:
+        line = line.split()
+        token = line[0]
+        token_file.write(token + "\n")
+        embedding_vectors.append(np.array(line[1:]).astype(np.float)) # Get Embedding vector
+token_file.close()
+
+# Create Embedding Matrix
+# Assume we're using dim=100 for now, also allow for PAD and UNK embeddings, hence + 2
+embedding_matrix = np.zeros((len(embedding_vectors) + 2, 100))
+for i, vector in enumerate(embedding_vectors):
+    embedding_matrix[i + 2] = vector
+embedding_tensor = torch.Tensor(embedding_matrix)
+torch.save(embedding_tensor, Path.joinpath(glove_dir_path, 'token_embedder'))
 
 
 # FOR ALLEN OIE MODEL ONLY
