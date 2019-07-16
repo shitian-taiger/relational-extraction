@@ -1,12 +1,25 @@
 from pathlib import Path
 from trainer import Trainer
 
-# Vocabulary and Embedding file directories
-cwd = Path(__file__).parent.resolve()
-# Weights directory includes weights for LSTM layers, token, verb embeddings and tag embeddings
-weights_dir = Path.joinpath(cwd, "weights")
-vocab_dir = Path.joinpath(cwd, "vocab")
-embedding_dir = Path.joinpath(cwd, "weights") # This is the same as the weights dir for now
+# Implementation root
+impl_root = Path(__file__).parent.resolve()
+
+# Data
+traindata_file = Path.joinpath(impl_root.parent.resolve(), "data/OIE/train.oie.conll")
+testdata_file = Path.joinpath(impl_root.parent.resolve(), "data/OIE/test.gold_conll")
+
+# ALLEN OIE config
+weights_dir = Path.joinpath(impl_root, "AllenOIE/weights")
+tokens_dir = Path.joinpath(impl_root, "AllenOIE/tokens")
+labels_dir = Path.joinpath(impl_root, "AllenOIE/labels") # This is the same as the weights dir for now
+verb_embedding = Path.joinpath(impl_root, "AllenOIE/verb_embedder")
+
+# Custom config
+# weights_dir = Path.joinpath(impl_root, "Custom/weights")
+# tokens_dir = Path.joinpath(impl_root, "Custom/tokens")
+# labels_dir = Path.joinpath(impl_root, "Custom/labels") # This is the same as the weights dir for now
+# verb_embedding = Path.joinpath(impl_root, "AllenOIE/verb_embedder")
+
 
 model_config = {
     "input_size": 200,
@@ -14,15 +27,13 @@ model_config = {
     "highway": True,
     "dropout": 0.2, # Irrelevant for now
     "layers": 8,
-    "weights_dir": weights_dir,
-    "vocab_dir": vocab_dir,
-    "embedding_dir": embedding_dir,
-    "embedding_dim": 100,
-    "num_classes": 62,
+    "weights_dir": weights_dir, # Directory containing LSTM weights
+    "tokens_dir": tokens_dir, # Directory containing tokens.txt and embeddings
+    "labels_dir": labels_dir, # Directory containing labels.txt and corresponding weights and bias
+    "verb_embedding": verb_embedding, # Filepath to verb embedding file
+    "embedding_dim": 100, # Ensure this matches token embedding dimensions
+    "num_classes": 62, # Ensure this matches num labels
 }
-
-traindata_file = Path.joinpath(cwd.parent, "data/OIE/train.oie.conll")
-testdata_file = Path.joinpath(cwd.parent, "data/OIE/test.gold_conll")
 
 training_config = {
     "epochs": 5,

@@ -28,9 +28,9 @@ class Trainer:
             training_config: Training Configurations including batch_size etc
         """
 
-        self.vocab = Vocabulary(model_config["vocab_dir"])
+        self.vocab = Vocabulary(model_config["tokens_dir"])
         model_config["num_embeddings"] = self.vocab.vocab_len
-        self.labels = Labels(model_config["vocab_dir"])
+        self.labels = Labels(model_config["labels_dir"])
         self.model = REModel(model_config)
         self.preprocessor = Preprocessor(self.vocab, self.labels)
         self.decoder = Decoder(self.vocab, self.labels)

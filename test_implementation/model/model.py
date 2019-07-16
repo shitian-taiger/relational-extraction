@@ -11,7 +11,7 @@ class REModel(torch.nn.Module):
     """
     Bi-LSTM model: 1 to 1 tagging
 
-    Tokenized Input -> Token/Verb Embeddings -> Bi-LSTM -> Tag Embeddings
+    Tokenized Input -> Token + (Verb or NE) Embeddings -> Bi-LSTM -> Tag Embeddings
 
       -- Tag Embeddings: n-dim Vector to logits per Bi-LSTM token output
       -- Logits require further processing in Decoder
@@ -20,22 +20,34 @@ class REModel(torch.nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self._load_embeddings(config["num_embeddings"], config["embedding_dim"])
+        self._load_token_embeddings(config["num_embeddings"], config["embedding_dim"])
         self.bdlstm = self._instantiate_bdlstm()
         self._load_tag_layer()
         self.train = False # Turn this on for training
 
 
-    def _load_embeddings(self, num_embeddings, embedding_dim):
-        embedding_dir = self.config["embedding_dir"]
+    def _load_token_embeddings(self, num_embeddings, embedding_dim):
+        # Load weights for token embedding layer
+        embedding_dir = self.config["tokens_dir"]
         token_emb_weights = torch.load(Path.joinpath(embedding_dir, "token_embedder"))
-        verb_emb_weights = torch.load(Path.joinpath(embedding_dir, "verb_embedder"))
         self.token_embedding = torch.nn.Embedding(num_embeddings, embedding_dim,
                                                   constants.PAD_INDEX, _weight=token_emb_weights)
-        self.verb_embedding = torch.nn.Embedding(2, embedding_dim, _weight=verb_emb_weights)
+
+        # TODO (DEPRECATE) Verb embeddings only applicable ALLEN-OIE model
+        if "verb_embedding" in self.config.keys():
+            verb_emb_weights = torch.load(self.config["verb_embedding"])
+            self.verb_embedding = torch.nn.Embedding(2, embedding_dim, _weight=verb_emb_weights)
+
+        # Assuming 3 types of NE tags: NE-1, NE-2, O
+        if "ne_embedding" in self.config.keys():
+            ne_emb_weights = torch.load(self.config["ne_embeddings"])
+            self.ne_embedding = torch.nn.Embedding(3, embedding_dim, _weight=verb_emb_weights)
+        else:
+            self.ne_embedding = torch.nn.Embedding(3, embedding_dim)
 
 
     def _instantiate_bdlstm(self):
+        # Load weights for bi-directional LSTM
         input_size = self.config["input_size"]
         hidden_size = self.config["hidden_size"]
         layers = self.config["layers"]
@@ -53,6 +65,7 @@ class REModel(torch.nn.Module):
 
 
     def _load_layer_weights(self, layer: CustomLSTM, layer_num: int):
+        # Load weights for individual LSTM layer
         weights_dir = self.config["weights_dir"]
         input_weights: Tensor = torch.load(Path.joinpath(weights_dir, "layer{}_input_weight".format(layer_num)))
         input_bias: Tensor = torch.load(Path.joinpath(weights_dir, "layer{}_input_bias".format(layer_num)))
@@ -66,10 +79,10 @@ class REModel(torch.nn.Module):
 
     def _load_tag_layer(self):
         self.tag_layer = torch.nn.Linear(self.config["hidden_size"], self.config["num_classes"])
-        if self.config["weights_dir"]:
-            weights_dir = self.config["weights_dir"]
-            tag_layer_weights: Tensor = torch.load(Path.joinpath(weights_dir, "tag_layer_weights"))
-            tag_layer_bias: Tensor = torch.load(Path.joinpath(weights_dir, "tag_layer_bias"))
+        if self.config["labels_dir"]:
+            labels_dir = self.config["labels_dir"]
+            tag_layer_weights: Tensor = torch.load(Path.joinpath(labels_dir, "tag_layer_weights"))
+            tag_layer_bias: Tensor = torch.load(Path.joinpath(labels_dir, "tag_layer_bias"))
             self.tag_layer.weight = tag_layer_weights
             self.tag_layer.bias = tag_layer_bias
 
