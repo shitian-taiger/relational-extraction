@@ -137,15 +137,14 @@ class Base extends React.Component {
   downloadDb = (event) => {
     fetch(IP + "/db_download", {method: 'GET'})
       .then((response) => {
-        const reader = response.body.getReader();
-        reader.read().then( ({done, value}) => {
-          const blob = new Blob([value], {type: 'text/plain'});
-          const url = URL.createObjectURL(blob);
-          const dbDownload = document.createElement('a');
-          dbDownload.href = url;
-          dbDownload.download = 'store.db';
-          dbDownload.click(); // Manual trigger
-        });
+        return response.blob();
+      })
+      .then( (blob) => {
+        const url = URL.createObjectURL(blob);
+        const dbDownload = document.createElement('a');
+        dbDownload.href = url;
+        dbDownload.download = 'store.db';
+        dbDownload.click(); // Manual trigger
       })
       .catch((err) => alert("Server Error"));
   }

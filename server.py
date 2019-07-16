@@ -37,8 +37,8 @@ def quote_string(txt: str):
 def download_db():
     # Allow error stacktrace here, handle in frontend
     root = Path(__file__).parent.resolve()
-    print(Path.joinpath(root, "data/store.db"))
-    return send_file(str(Path.joinpath(root, "data/store.db")), cache_timeout=0)
+    file_path = Path.joinpath(root, "data/store.db")
+    return send_file(str(file_path), as_attachment=True, cache_timeout=0)
 
 
 @app.route('/get_sentence', methods=['GET'])
