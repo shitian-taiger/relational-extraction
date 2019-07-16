@@ -54,7 +54,10 @@ class Vocabulary:
 
 
     def load_from_dir(self, vocab_dir):
-        # Loads vocabulary tokens directly from file
+        """
+        Reads tokens from tokens file with 1 token for each line
+        Considering GLOVE embedding tokens and vectors are contained in one file, we preprocess it first
+        """
         tokens = "tokens.txt"
         with open(Path.joinpath(vocab_dir, tokens)) as v:
             for line in v:
