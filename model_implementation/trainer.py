@@ -4,10 +4,11 @@ from torch.nn.utils.rnn import pack_padded_sequence
 
 from typing import Tuple, Dict, List
 from model.decoder import Decoder
+
 from model.model import REModel
 from model.utils import *
 
-from data_utils import get_tokens_oie
+from data_utils import parse_generated_instances
 
 class Trainer:
 
@@ -31,12 +32,13 @@ class Trainer:
         self.vocab = Vocabulary(model_config["tokens_dir"])
         model_config["num_embeddings"] = self.vocab.vocab_len
         self.labels = Labels(model_config["labels_dir"])
+        model_config["num_classes"] = self.labels.labels_len
         self.model = REModel(model_config)
         self.preprocessor = Preprocessor(self.vocab, self.labels)
         self.decoder = Decoder(self.vocab, self.labels)
 
         if training_config:
-            self.training_config = training_config
+            self.training_config: Dict = training_config
             self.optimizer = torch.optim.Adam(self.model.parameters())
 
 
@@ -51,12 +53,14 @@ class Trainer:
 
         for i in range(epochs):
             batch_tokens, batch_tags = [], []
-            for tokens, tags in get_tokens_oie(file_dir):
+            for tokens, tags in parse_generated_instances(self.training_config["traindata_file"]):
                 if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
                     self.optimizer.zero_grad() # Clear optimizer gradients
 
                     model_input = self.preprocess_batch(batch_tokens, batch_tags)
                     output = self.model(model_input)
+
+                    output_tags = self.decoder.decode(output)["tags"]
                     loss = output["loss"]
                     loss.backward()
                     self.optimizer.step()
@@ -65,9 +69,8 @@ class Trainer:
 
                     batch_tokens, batch_tags = [], []
 
-                if tokens and tags: # Omit cases where there are empty sentences
-                    batch_tokens.append(tokens)
-                    batch_tags.append(tags)
+                batch_tokens.append(tokens)
+                batch_tags.append(tags)
 
 
     def predict(self, sentence: str):
@@ -192,7 +195,7 @@ class Trainer:
             tokens_list: List of (List of string words)
             tags_list: List of (List of string tags)
         Returns:
-            Dictionary of sentence vector (token indexes), predicate vector (one-hot),
+            Dictionary of sentence vector (token indexes), entity vector,
             sequence_lengths and sequence mask and tags vector (tag indexes)
         """
         assert(len(tokens_list) == len(tags_list))
@@ -201,7 +204,7 @@ class Trainer:
             tags = tags_list[i]
             vectorized: List[Dict] = self.preprocessor.vectorize_token_tags(tokens, tags)
             vectorized_list += vectorized
-        sents, preds, lens, mask, tags = self.preprocessor.pad_batch(vectorized_list)
-        return { "sent_vec": sents.long(), "pred_vec": preds.long(),
-                "lengths": lens, "mask": mask, "tags_vec": tags }
+        sents_vec, ents_vec, lens_vec, mask, tags_vec = self.preprocessor.pad_batch(vectorized_list)
+        return { "sent_vec": sents_vec.long(), "ent_vec": ents_vec.long(),
+                "lengths": lens_vec, "mask": mask, "tags_vec": tags_vec.long() }
 
