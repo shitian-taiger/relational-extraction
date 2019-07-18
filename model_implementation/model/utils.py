@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Dict, List
 from enum import Enum
 
-class constants:
+
+class Constants:
     PAD_INDEX = 0
     UNK_INDEX = 1
     PADDING = "<PAD>"
@@ -32,10 +33,10 @@ class Vocabulary:
         idx_word_map: List = []
 
         # Add Padding and Unknown to vocabulary
-        word_idx_map[constants.PADDING] = constants.PAD_INDEX
-        idx_word_map.append(constants.PADDING)
-        word_idx_map[constants.UNKNOWN] = constants.UNK_INDEX
-        idx_word_map.append(constants.UNKNOWN)
+        word_idx_map[Constants.PADDING] = Constants.PAD_INDEX
+        idx_word_map.append(Constants.PADDING)
+        word_idx_map[Constants.UNKNOWN] = Constants.UNK_INDEX
+        idx_word_map.append(Constants.UNKNOWN)
 
         # Add words to vocab
         for i, word in enumerate(words):
@@ -61,7 +62,7 @@ class Vocabulary:
         tokens = "tokens.txt"
         with open(Path.joinpath(vocab_dir, tokens)) as v:
             for line in v:
-                if "@@UNKNOWN" in line: # Ignore UNK tag from Allen, already present in constants
+                if "@@UNKNOWN" in line: # Ignore UNK tag from Allen, already present in Constants
                     continue
                 self.add_word(line.split("\n")[0])
 
@@ -74,7 +75,7 @@ class Vocabulary:
     def get_index_from_word(self, word: str):
         assert(isinstance(word, str))
         return self.word_to_idx[word] if word in self.word_to_idx else \
-            self.word_to_idx[constants.UNKNOWN]
+            self.word_to_idx[Constants.UNKNOWN]
 
 
 class Labels:
@@ -122,16 +123,16 @@ class Preprocessor:
         """
         Tokenizes and indexes sentences based on given vocabulary
         Returns:
-            Dictionary of sent_vec (token indexes) and pred_vec (one-hot encoded)
+            Dictionary of sent_vec (token indexes) and ent_vec (one-hot encoded)
         """
         paired = self._pair_sentence_pred(sentence)
         vectorized_instances: List[Dict] = []
         for sent_pred_pair in paired:
             tokens, pred_index = sent_pred_pair["tokens"], sent_pred_pair["pred_index"]
             sent_vec = [self.vocab.get_index_from_word(token.text) for token in tokens] # Tokens are spacy tokens
-            pred_vec = [1 if i == pred_index else 0 for i in range(len((tokens)))]
+            ent_vec = [1 if i == pred_index else 0 for i in range(len((tokens)))]
             vectorized_instances.append({ "sent_vec": np.asarray(sent_vec),
-                                          "pred_vec": np.asarray(pred_vec)})
+                                          "ent_vec": np.asarray(ent_vec)})
         return vectorized_instances
 
 
@@ -139,18 +140,18 @@ class Preprocessor:
         """
         For training purposes, tokenization is ommitted: assume training data has
         to have tagged tokenized input
+          - tags_vec labels ENT labels as O since loss only considers REL tags
         Returns:
-            Dictionary of sent_vec (token indexes), pred_vec (one-hot encoded)
+            Dictionary of sent_vec (token indexes), ent_vec (1 for ENT1, 2 for ENT2, 0 otherwise)
             and tags_vec (tag indexes)
         """
         assert(len(tokens) == len(tags))
-        pred_index = tags.index("B-V") # Take Beginning of verb as predicate index
         sent_vec = [self.vocab.get_index_from_word(token) for token in tokens] # Tokens are strings
-        pred_vec = [1 if i == pred_index else 0 for i in range(len((tokens)))]
+        ent_vec = [1 if "ENT1" in label else 2 if "ENT2" in label else 0 for label in tags]
         tags_vec = [self.labels.get_index_from_word(tag) for tag in tags]
         return [({ "sent_vec": np.asarray(sent_vec),
-                   "pred_vec": np.asarray(pred_vec),
-                   "tags_vec": np.asarray(tags_vec)})]
+                   "ent_vec": np.asarray(ent_vec),
+                   "tags_vec": np.asarray(tags_vec) })]
 
 
     def pad_batch(self, batch_instances: List[Dict]):
@@ -158,8 +159,8 @@ class Preprocessor:
         Pads all sentences to the maximum length of the batch to facilitate padding packed sequence
         During training, tags are likewise padded
         Arguments:
-            batch_instances: List of (Dict containing indexes of tokens, one-hot encoded predicate,
-                                       tags_vector [Optional])
+            batch_instances: List of output of vectorize_token_tags -
+                             (Dict of token_vector, entity_vector , tags_vector [Optional])
         Returns:
             Tensors of input Dict values
         """
@@ -168,17 +169,17 @@ class Preprocessor:
         max_len = max([len(instance["sent_vec"]) for instance in batch_instances]) # Get max length of sequence
 
         # Instantiate numpy array of shape (batch size, max length) with all padding indexes
-        padded_batch_sentences = np.full((batch_size, max_len), constants.PAD_INDEX)
-        padded_batch_preds = np.full((batch_size, max_len), constants.PAD_INDEX)
-        padded_batch_tags = np.full((batch_size, max_len), constants.PAD_INDEX) # Use this only for training
+        padded_batch_sentences = np.full((batch_size, max_len), Constants.PAD_INDEX)
+        padded_batch_ents = np.full((batch_size, max_len), Constants.PAD_INDEX)
+        padded_batch_tags = np.full((batch_size, max_len), Constants.PAD_INDEX) # Use this only for training
         instance_lengths = [] # This is required for pack_padded_sequence
         mask = np.full((batch_size, max_len), 0) # 1 if index is valid for sentence else 0
 
         for i, instance in enumerate(batch_instances): # Fill batch with actual values
-            sent_vec, pred_vec = instance["sent_vec"], instance["pred_vec"]
+            sent_vec, ent_vec = instance["sent_vec"], instance["ent_vec"]
             instance_len = len(sent_vec)
             padded_batch_sentences[i, 0:instance_len] = sent_vec[:]
-            padded_batch_preds[i, 0:instance_len] = pred_vec[:]
+            padded_batch_ents[i, 0:instance_len] = ent_vec[:]
 
             if tags_present: # Only for training
                 padded_batch_tags[i, 0:instance_len] = instance["tags_vec"][:]
@@ -187,10 +188,10 @@ class Preprocessor:
             instance_lengths.append(instance_len)
 
         if tags_present:
-            return (Tensor(padded_batch_sentences), Tensor(padded_batch_preds),
+            return (Tensor(padded_batch_sentences), Tensor(padded_batch_ents),
                     instance_lengths, Tensor(mask), Tensor(padded_batch_tags))
         else:
-            return (Tensor(padded_batch_sentences), Tensor(padded_batch_preds),
+            return (Tensor(padded_batch_sentences), Tensor(padded_batch_ents),
                     instance_lengths, Tensor(mask))
 
 

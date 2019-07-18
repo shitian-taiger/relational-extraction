@@ -11,10 +11,11 @@ class REModel(torch.nn.Module):
     """
     Bi-LSTM model: 1 to 1 tagging
 
-    Tokenized Input -> Token + (Verb or NE) Embeddings -> Bi-LSTM -> Tag Embeddings
+    Tokenized Input -> Token + NE Embeddings -> Bi-LSTM -> Tag Embeddings
+
 
       -- Tag Embeddings: n-dim Vector to logits per Bi-LSTM token output
-      -- Logits require further processing in Decoder
+      -- Logits require further processing in Decoder to produce valid BIO Tags
     """
 
     def __init__(self, config):
@@ -31,14 +32,14 @@ class REModel(torch.nn.Module):
         embedding_dir = self.config["tokens_dir"]
         token_emb_weights = torch.load(Path.joinpath(embedding_dir, "token_embedder"))
         self.token_embedding = torch.nn.Embedding(num_embeddings, embedding_dim,
-                                                  constants.PAD_INDEX, _weight=token_emb_weights)
+                                                  Constants.PAD_INDEX, _weight=token_emb_weights)
 
         # TODO (DEPRECATE) Verb embeddings only applicable ALLEN-OIE model
         if "verb_embedding" in self.config.keys():
             verb_emb_weights = torch.load(self.config["verb_embedding"])
             self.verb_embedding = torch.nn.Embedding(2, embedding_dim, _weight=verb_emb_weights)
 
-        # Assuming 3 types of NE tags: NE-1, NE-2, O
+        # Assuming 3 types of NE labels: NE-1, NE-2, O
         if "ne_embedding" in self.config.keys():
             ne_emb_weights = torch.load(self.config["ne_embeddings"])
             self.ne_embedding = torch.nn.Embedding(3, embedding_dim, _weight=verb_emb_weights)
@@ -81,10 +82,12 @@ class REModel(torch.nn.Module):
         self.tag_layer = torch.nn.Linear(self.config["hidden_size"], self.config["num_classes"])
         if self.config["labels_dir"]:
             labels_dir = self.config["labels_dir"]
-            tag_layer_weights: Tensor = torch.load(Path.joinpath(labels_dir, "tag_layer_weights"))
-            tag_layer_bias: Tensor = torch.load(Path.joinpath(labels_dir, "tag_layer_bias"))
-            self.tag_layer.weight = tag_layer_weights
-            self.tag_layer.bias = tag_layer_bias
+            if Path.exists(Path.joinpath(labels_dir, "tag_layer_weights")) and \
+               Path.exists(Path.joinpath(labels_dir, "tag_layer_weights")):
+                tag_layer_weights = torch.load(Path.joinpath(labels_dir, "tag_layer_weights"))
+                tag_layer_bias = torch.load(Path.joinpath(labels_dir, "tag_layer_bias"))
+                self.tag_layer.weight = tag_layer_weights
+                self.tag_layer.bias = tag_layer_bias
 
 
     def _sort_and_pack_embeddings(self, full_embeddings: Tensor, lengths: List):
@@ -137,13 +140,13 @@ class REModel(torch.nn.Module):
 
     def forward(self, input_dict: Dict):
         """
-        Takes as input dictionary of { "sent_vec": Tensor, "pred_vec": Tensor }
+        Takes as input dictionary of { "sent_vec": Tensor, "ent_vec": Tensor }
         Concatenates the embedded sentence and its corresponding verb
         """
-        sent_vec, pred_vec = input_dict["sent_vec"], input_dict["pred_vec"]
+        sent_vec, ent_vec = input_dict["sent_vec"], input_dict["ent_vec"]
         embedded_sentences = self.token_embedding(sent_vec)
-        embedded_verbs = self.verb_embedding(pred_vec)
-        full_embeddings = torch.cat([embedded_sentences, embedded_verbs], dim=-1)
+        embedded_ents = self.ne_embedding(ent_vec)
+        full_embeddings = torch.cat([embedded_sentences, embedded_ents], dim=-1)
 
         # Sort and pack padded sequence (pytorch default api requires that sequences be sorted)
         packed, original_order = self._sort_and_pack_embeddings(full_embeddings, input_dict["lengths"])
@@ -172,11 +175,10 @@ class REModel(torch.nn.Module):
         log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=-1) # (batch * sequence_length, num_classes)
         tags_flat = tags.view(-1, 1).long() # (batch * max_len, 1)
 
-        negative_log_likelihood_flat = - torch.gather(log_probs_flat, dim=1, index=tags_flat)
+        negative_log_likelihood_flat = -torch.gather(log_probs_flat, dim=1, index=tags_flat)
         negative_log_likelihood = negative_log_likelihood_flat.view(*tags.size())
         negative_log_likelihood = negative_log_likelihood * mask.float()
 
-        # shape : (batch_size,)
         per_batch_loss = negative_log_likelihood.sum(1) / (mask.sum(1).float() + 1e-13)
         num_non_empty_sequences = ((mask.sum(1) > 0).float().sum() + 1e-13)
         loss = per_batch_loss.sum() / num_non_empty_sequences
