@@ -21,30 +21,40 @@ class REModel(torch.nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self._load_token_embeddings(config["num_embeddings"], config["embedding_dim"])
+        self._load_token_embeddings()
         self.bdlstm = self._instantiate_bdlstm()
         self._load_tag_layer()
         self.train = False # Turn this on for training
 
 
-    def _load_token_embeddings(self, num_embeddings, embedding_dim):
+    def _load_token_embeddings(self):
         # Load weights for token embedding layer
-        embedding_dir = self.config["tokens_dir"]
-        token_emb_weights = torch.load(Path.joinpath(embedding_dir, "token_embedder"))
-        self.token_embedding = torch.nn.Embedding(num_embeddings, embedding_dim,
+        token_embedding_dir = self.config["tokens_dir"]
+        token_emb_weights = torch.load(Path.joinpath(token_embedding_dir, "token_embedder"))
+        self.token_embedding = torch.nn.Embedding(self.config["num_tokens"], self.config["token_embedding_dim"],
                                                   Constants.PAD_INDEX, _weight=token_emb_weights)
 
         # TODO (DEPRECATE) Verb embeddings only applicable ALLEN-OIE model
         if "verb_embedding" in self.config.keys():
             verb_emb_weights = torch.load(self.config["verb_embedding"])
-            self.verb_embedding = torch.nn.Embedding(2, embedding_dim, _weight=verb_emb_weights)
+            self.verb_embedding = torch.nn.Embedding(2, self.config["token_embedding_dim"], _weight=verb_emb_weights)
 
         # Assuming 3 types of NE labels: NE-1, NE-2, O
-        if "ne_embedding" in self.config.keys():
-            ne_emb_weights = torch.load(self.config["ne_embeddings"])
-            self.ne_embedding = torch.nn.Embedding(3, embedding_dim, _weight=verb_emb_weights)
-        else:
-            self.ne_embedding = torch.nn.Embedding(3, embedding_dim)
+        if "ne_embedding_dim" in self.config:
+            if "ne_embedding" in self.config.keys():
+                ne_emb_weights = torch.load(self.config["ne_embeddings"])
+                self.ne_embedding = torch.nn.Embedding(3, self.config["ne_embedding_dim"], _weight=verb_emb_weights)
+            else:
+                self.ne_embedding = torch.nn.Embedding(3, self.config["ne_embedding_dim"])
+
+        # POS tag embedding
+        if "ne_embedding_dim" in self.config:
+            if "pos_embedding" in self.config.keys():
+                pos_emb_weights = torch.load(self.config["pos_embedding"])
+                self.pos_embedding = torch.nn.Embedding(self.config["num_pos"], self.config["pos_embedding_dim"], _weight=pos_emb_weights)
+            else:
+                self.pos_embedding = torch.nn.Embedding(self.config["num_pos"], self.config["pos_embedding_dim"])
+
 
 
     def _instantiate_bdlstm(self):
@@ -143,10 +153,11 @@ class REModel(torch.nn.Module):
         Takes as input dictionary of { "sent_vec": Tensor, "ent_vec": Tensor }
         Concatenates the embedded sentence and its corresponding verb
         """
-        sent_vec, ent_vec = input_dict["sent_vec"], input_dict["ent_vec"]
+        sent_vec, ent_vec, pos_vec = input_dict["sent_vec"], input_dict["ent_vec"], input_dict["pos_vec"]
         embedded_sentences = self.token_embedding(sent_vec)
         embedded_ents = self.ne_embedding(ent_vec)
-        full_embeddings = torch.cat([embedded_sentences, embedded_ents], dim=-1)
+        embedded_pos = self.pos_embedding(pos_vec)
+        full_embeddings = torch.cat([embedded_sentences, embedded_ents, embedded_pos], dim=-1)
 
         # Sort and pack padded sequence (pytorch default api requires that sequences be sorted)
         packed, original_order = self._sort_and_pack_embeddings(full_embeddings, input_dict["lengths"])

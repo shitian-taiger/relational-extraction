@@ -31,7 +31,9 @@ model_config = {
     "tokens_dir": tokens_dir, # Directory containing tokens.txt and embeddings
     "pos_dir": pos_dir, # Directory containing pos.txt and corresponding embeddings
     "labels_dir": labels_dir, # Directory containing labels.txt and corresponding weights and bias
-    "embedding_dim": 100, # Ensure this matches token embedding dimensions
+    "token_embedding_dim": 100,
+    "ne_embedding_dim": 50,
+    "pos_embedding_dim": 50,
 }
 
 training_config = {

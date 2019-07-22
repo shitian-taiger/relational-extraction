@@ -30,10 +30,11 @@ class Trainer:
         """
 
         self.vocab = Vocabulary(model_config["tokens_dir"])
-        model_config["num_embeddings"] = self.vocab.vocab_len
+        model_config["num_tokens"] = self.vocab.vocab_len
         self.labels = Labels(model_config["labels_dir"])
         model_config["num_classes"] = self.labels.labels_len
         self.pos = POS(model_config["pos_dir"])
+        model_config["num_pos"] = self.pos.pos_len
         self.preprocessor = Preprocessor(self.vocab, self.labels, self.pos)
 
         self.model = REModel(model_config)
@@ -209,7 +210,7 @@ class Trainer:
             pos = pos_list[i]
             vectorized: List[Dict] = self.preprocessor.vectorize_token_tags(tokens, tags, pos)
             vectorized_list += vectorized
-        sents_vec, ents_vec, lens_vec, mask, tags_vec = self.preprocessor.pad_batch(vectorized_list)
-        return { "sent_vec": sents_vec.long(), "ent_vec": ents_vec.long(),
+        sents_vec, ents_vec, pos_vec, lens_vec, mask, tags_vec = self.preprocessor.pad_batch(vectorized_list)
+        return { "sent_vec": sents_vec.long(), "ent_vec": ents_vec.long(), "pos_vec": pos_vec.long(),
                 "lengths": lens_vec, "mask": mask, "tags_vec": tags_vec.long() }
 

@@ -174,8 +174,8 @@ class Preprocessor:
         to have tagged tokenized input
           - tags_vec labels ENT labels as O since loss only considers REL tags
         Returns:
-            Dictionary of sent_vec (token indexes), ent_vec (1 for ENT1, 2 for ENT2, 0 otherwise)
-            and tags_vec (tag indexes)
+            Dictionary of sent_vec (token indexes), ent_vec (1 for ENT1, 2 for ENT2, 0 otherwise),
+            pos_vec (index of POS tag of each token) and tags_vec (tag indexes)
         """
         assert(len(tokens) == len(tags))
         sent_vec = [self.vocab.get_index_from_word(token) for token in tokens] # Tokens are strings
@@ -195,7 +195,7 @@ class Preprocessor:
         During training, tags are likewise padded
         Arguments:
             batch_instances: List of output of vectorize_token_tags -
-                             (Dict of token_vector, entity_vector , tags_vector [Optional])
+                             (Dict of token_vector, entity_vector, pos_vector, tags_vector [Optional])
         Returns:
             Tensors of input Dict values
         """
@@ -206,15 +206,17 @@ class Preprocessor:
         # Instantiate numpy array of shape (batch size, max length) with all padding indexes
         padded_batch_sentences = np.full((batch_size, max_len), Constants.PAD_INDEX)
         padded_batch_ents = np.full((batch_size, max_len), Constants.PAD_INDEX)
+        padded_batch_pos = np.full((batch_size, max_len), Constants.PAD_INDEX)
         padded_batch_tags = np.full((batch_size, max_len), Constants.PAD_INDEX) # Use this only for training
         instance_lengths = [] # This is required for pack_padded_sequence
         mask = np.full((batch_size, max_len), 0) # 1 if index is valid for sentence else 0
 
         for i, instance in enumerate(batch_instances): # Fill batch with actual values
-            sent_vec, ent_vec = instance["sent_vec"], instance["ent_vec"]
+            sent_vec, ent_vec, pos_vec = instance["sent_vec"], instance["ent_vec"], instance["pos_vec"]
             instance_len = len(sent_vec)
             padded_batch_sentences[i, 0:instance_len] = sent_vec[:]
             padded_batch_ents[i, 0:instance_len] = ent_vec[:]
+            padded_batch_pos[i, 0:instance_len] = pos_vec[:]
 
             if tags_present: # Only for training
                 padded_batch_tags[i, 0:instance_len] = instance["tags_vec"][:]
@@ -223,10 +225,10 @@ class Preprocessor:
             instance_lengths.append(instance_len)
 
         if tags_present:
-            return (Tensor(padded_batch_sentences), Tensor(padded_batch_ents),
+            return (Tensor(padded_batch_sentences), Tensor(padded_batch_ents), Tensor(padded_batch_pos),
                     instance_lengths, Tensor(mask), Tensor(padded_batch_tags))
         else:
-            return (Tensor(padded_batch_sentences), Tensor(padded_batch_ents),
+            return (Tensor(padded_batch_sentences), Tensor(padded_batch_ents), Tensor(padded_batch_pos),
                     instance_lengths, Tensor(mask))
 
 
