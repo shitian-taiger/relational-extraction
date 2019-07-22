@@ -63,7 +63,7 @@ def tag_phrase(phrase: str, tag: str):
 
 def instance_to_iob(sentence: str, instance: Tuple):
     """
-    Given an instance of a relational tuple, performs IOB-2 tagging with ("ENT1" / "REL" / "ENT2")
+    Given an instance of a relational tuple, performs IOB tagging with ("ENT1" / "REL" / "ENT2")
     FIXME Improve robustness
     -- Assumptions:
        - Singular instance of entity and relation within sentence
@@ -71,29 +71,37 @@ def instance_to_iob(sentence: str, instance: Tuple):
     Returns:
        iob_instance: `\n` separated tokens with each row: <word_index>, <token>, <IOB-2 tag>
     """
-    ent1, rel, ent2 = instance[0], instance[1], instance[2]
+
+    nlp = spacy.load('en_core_web_sm')
+    pos_tags = [token.pos_ for token in nlp(sentence)]
+
+    ent1, rel, ent2 = instance[0] + " ", instance[1] + " ", instance[2] + " "
     args = [{"phrase": ent1, "tag": "ENT1", "idxs": (sentence.find(ent1), sentence.find(ent1) + len(ent1)) }, \
             {"phrase": rel, "tag": "REL", "idxs": (sentence.find(rel), sentence.find(rel) + len(rel))}, \
             {"phrase": ent2, "tag": "ENT2", "idxs": (sentence.find(ent2), sentence.find(ent2) + len(ent2))}]
     args.sort(key=lambda arg: arg["idxs"][0]) # Sort arguments by start index to facilitate tagging
 
-    # Separate sentence into phrases separated by `args`, tokenize and tag with `tag_phrase`
-    start_index = 0
+    # Separate sentence into phrases separated by `args`, tokenize and tag with `tag_phrase()`
+    curr_sentence_index = 0
     instance = ""
     for arg in args:
-        if not arg["idxs"][0] == 0:
-            out_phrase = sentence[start_index: arg["idxs"][0]]
-            instance = "".join([instance, tag_phrase(out_phrase, "O")])
-        instance = "".join([instance, tag_phrase(arg["phrase"], arg["tag"])])
-        start_index = arg["idxs"][1]
-    # Append last phrase
-    out_phrase = sentence[start_index: len(sentence) - 1]
-    instance = "".join([instance, tag_phrase(out_phrase, "O")])
+        # TEMP FIXME Arg not in sentence, fix in front-end
+        if arg["idxs"][0] == -1:
+            return ""
 
-    # Add word_index per token, skip the first element ""
+        if not arg["idxs"][0] == curr_sentence_index:
+            non_arg_phrase = sentence[curr_sentence_index: arg["idxs"][0]]
+            instance = "".join([instance, tag_phrase(non_arg_phrase, "O")])
+        instance = "".join([instance, tag_phrase(arg["phrase"], arg["tag"])])
+        curr_sentence_index = arg["idxs"][1]
+    # Append last phrase
+    non_arg_phrase = sentence[curr_sentence_index: len(sentence) - 1]
+    instance = "".join([instance, tag_phrase(non_arg_phrase, "O")])
+
+    # Add word_index and pos tag per token, skip the first element ""
     iob_instance = []
     for i, row, in enumerate(instance.split("\n")[1:]):
-        iob_instance.append("\t".join([str(i), row]))
+        iob_instance.append("\t".join([str(i), row, pos_tags[i]]))
     return "\n".join(["\n".join(iob_instance), "", ""])
 
 
