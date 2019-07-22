@@ -41,20 +41,17 @@ class REModel(torch.nn.Module):
 
         # Assuming 3 types of NE labels: NE-1, NE-2, O
         if "ne_embedding_dim" in self.config:
+            self.ne_embedding = torch.nn.Embedding(3, self.config["ne_embedding_dim"])
             if "ne_embedding" in self.config.keys():
                 ne_emb_weights = torch.load(self.config["ne_embeddings"])
-                self.ne_embedding = torch.nn.Embedding(3, self.config["ne_embedding_dim"], _weight=verb_emb_weights)
-            else:
-                self.ne_embedding = torch.nn.Embedding(3, self.config["ne_embedding_dim"])
+                self.ne_embedding.weight = verb_emb_weights
 
         # POS tag embedding
         if "ne_embedding_dim" in self.config:
+            self.pos_embedding = torch.nn.Embedding(self.config["num_pos"], self.config["pos_embedding_dim"])
             if "pos_embedding" in self.config.keys():
                 pos_emb_weights = torch.load(self.config["pos_embedding"])
-                self.pos_embedding = torch.nn.Embedding(self.config["num_pos"], self.config["pos_embedding_dim"], _weight=pos_emb_weights)
-            else:
-                self.pos_embedding = torch.nn.Embedding(self.config["num_pos"], self.config["pos_embedding_dim"])
-
+                self.pos_embedding.weight = pos_emb_weights
 
 
     def _instantiate_bdlstm(self):

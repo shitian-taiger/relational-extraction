@@ -48,13 +48,15 @@ Implemented model structure is largely drawn from AllenNLP.\
 
 
 ### Model Changes
-Switched one-hot encoded predicate vector:\
+- Switched one-hot encoded predicate vector:\
 `[1 if idx == B-pred_index else 0 for idx in len(tokens)]`\
 to Entity tagging vector:\
 `[1 if "ENT1" in label else 2 if "ENT2" in label else 0 for label in tags]`
 
+- Add token POS-tagging vector (POS tags are taken from Spacy)\
+For reference: https://github.com/explosion/spaCy/blob/master/spacy/lang/en/tag_map.py
+
 ***[Under Construction]***
-- Add token POS-tagging vector
 - Integration of word2vecf token embedding: https://levyomer.files.wordpress.com/2014/04/dependency-based-word-embeddings-acl-2014.pdf
 
 
