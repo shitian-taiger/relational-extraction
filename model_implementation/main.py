@@ -18,6 +18,7 @@ labels_dir = Path.joinpath(impl_root, "AllenOIE/labels") # This is the same as t
 weights_dir = None
 tokens_dir = Path.joinpath(impl_root, "Custom/tokens")
 labels_dir = Path.joinpath(impl_root, "Custom/labels")
+pos_dir = Path.joinpath(impl_root, "Custom/pos")
 
 
 model_config = {
@@ -28,6 +29,7 @@ model_config = {
     "layers": 8,
     "weights_dir": weights_dir, # Directory containing LSTM weights
     "tokens_dir": tokens_dir, # Directory containing tokens.txt and embeddings
+    "pos_dir": pos_dir, # Directory containing pos.txt and corresponding embeddings
     "labels_dir": labels_dir, # Directory containing labels.txt and corresponding weights and bias
     "embedding_dim": 100, # Ensure this matches token embedding dimensions
 }
@@ -47,6 +49,4 @@ sentences = [
     ]
 
 trainer = Trainer(model_config, training_config)
-for sentence in sentences:
-    trainer.train()
-    # print(trainer.predict(sentence))
+trainer.train()

@@ -77,14 +77,16 @@ def parse_generated_instances(file_path: str):
     word_id | word | label
         - label: (B/I - ENT1) | (B/I - REL) | (B/I - ENT2) | O)
     """
-    df = pd.read_csv(file_path, sep="\t", names=["word_id", "word", "label"])
-    tokens, tags = [], []
+    df = pd.read_csv(file_path, sep="\t", names=["word_id", "word", "label", "pos"])
+    tokens, tags, pos = [], [], []
     for _, row in df.iterrows():
         token = row['word']
         tag = row['label']
+        token_pos = row['pos']
         if row["word_id"] == 0 and tokens and tags:
-            yield tokens, tags
-            tokens, tags = [token], [tag]
+            yield tokens, tags, pos
+            tokens, tags, pos = [token], [tag], [token_pos]
         else:
             tokens.append(token)
             tags.append(tag)
+            pos.append(token_pos)

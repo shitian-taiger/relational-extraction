@@ -33,8 +33,10 @@ class Trainer:
         model_config["num_embeddings"] = self.vocab.vocab_len
         self.labels = Labels(model_config["labels_dir"])
         model_config["num_classes"] = self.labels.labels_len
+        self.pos = POS(model_config["pos_dir"])
+        self.preprocessor = Preprocessor(self.vocab, self.labels, self.pos)
+
         self.model = REModel(model_config)
-        self.preprocessor = Preprocessor(self.vocab, self.labels)
         self.decoder = Decoder(self.vocab, self.labels)
 
         if training_config:
@@ -52,12 +54,12 @@ class Trainer:
         batch_size = self.training_config["batch_size"]
 
         for i in range(epochs):
-            batch_tokens, batch_tags = [], []
-            for tokens, tags in parse_generated_instances(self.training_config["traindata_file"]):
+            batch_tokens, batch_tags, batch_pos = [], [], []
+            for tokens, tags, pos in parse_generated_instances(self.training_config["traindata_file"]):
                 if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
                     self.optimizer.zero_grad() # Clear optimizer gradients
 
-                    model_input = self.preprocess_batch(batch_tokens, batch_tags)
+                    model_input = self.preprocess_batch(batch_tokens, batch_tags, batch_pos)
                     output = self.model(model_input)
 
                     output_tags = self.decoder.decode(output)["tags"]
@@ -67,10 +69,11 @@ class Trainer:
 
                     print("Batch loss: {}".format(loss))
 
-                    batch_tokens, batch_tags = [], []
+                    batch_tokens, batch_tags, batch_pos = [], [], []
 
                 batch_tokens.append(tokens)
                 batch_tags.append(tags)
+                batch_pos.append(pos)
 
 
     def predict(self, sentence: str):
@@ -188,12 +191,13 @@ class Trainer:
                  "lengths": lens, "mask": mask }
 
 
-    def preprocess_batch(self, tokens_list: List[List], tags_list: List[List]):
+    def preprocess_batch(self, tokens_list: List[List], tags_list: List[List], pos_list: List[List]):
         """
         Preprocessing for tokens and tags for training
         Arguments:
             tokens_list: List of (List of string words)
             tags_list: List of (List of string tags)
+            pos_list: List of (List of string word POS)
         Returns:
             Dictionary of sentence vector (token indexes), entity vector,
             sequence_lengths and sequence mask and tags vector (tag indexes)
@@ -202,7 +206,8 @@ class Trainer:
         vectorized_list: List[Dict] = []
         for i, tokens in enumerate(tokens_list):
             tags = tags_list[i]
-            vectorized: List[Dict] = self.preprocessor.vectorize_token_tags(tokens, tags)
+            pos = pos_list[i]
+            vectorized: List[Dict] = self.preprocessor.vectorize_token_tags(tokens, tags, pos)
             vectorized_list += vectorized
         sents_vec, ents_vec, lens_vec, mask, tags_vec = self.preprocessor.pad_batch(vectorized_list)
         return { "sent_vec": sents_vec.long(), "ent_vec": ents_vec.long(),

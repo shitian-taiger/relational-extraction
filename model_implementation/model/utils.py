@@ -19,10 +19,41 @@ class LSTM_Direction(Enum):
     backward = 1
 
 
-class Vocabulary:
+class POS:
+    """
+    Bidirectional mapping of POS of indexes
+    """
+    def __init__(self, pos_dir: str):
+        self.pos_to_idx, self.idx_to_pos = {}, {}
+        self.pos_len = 0
+        self.load_from_dir(pos_dir)
 
+
+    def load_from_dir(self, pos_dir):
+        """
+        Reads pos tags from file and map to dictionaries
+        """
+        with open(Path.joinpath(pos_dir, "pos.txt")) as p:
+            for line in p:
+                pos_tag = line.split("\n")[0]
+                self.pos_to_idx[pos_tag] = self.pos_len
+                self.idx_to_pos[self.pos_len] = pos_tag
+                self.pos_len += 1
+
+
+    def get_pos_from_index(self, index: int):
+        return self.idx_to_pos[index]
+
+
+    def get_index_from_pos(self, pos: str):
+        return self.pos_to_idx[pos]
+
+
+class Vocabulary:
+    """
+    Bidirectional mapping of words of indexes
+    """
     def __init__(self, vocab_dir: str, words=[]):
-        # Bidirectional mapping of words of indexes
         self.word_to_idx, self.idx_to_word = self._instantiate(words)
         self.vocab_len = len(self.idx_to_word)
         self.load_from_dir(vocab_dir)
@@ -114,10 +145,11 @@ class Labels:
 
 class Preprocessor:
 
-    def __init__(self, vocab: Vocabulary, labels: Labels):
+    def __init__(self, vocab: Vocabulary, labels: Labels, pos: POS):
         self.spacy_nlp = spacy.load("en_core_web_sm")
         self.vocab = vocab
         self.labels = labels
+        self.pos = pos
 
     def vectorize_sentence(self, sentence: str) -> List[Dict]:
         """
@@ -136,7 +168,7 @@ class Preprocessor:
         return vectorized_instances
 
 
-    def vectorize_token_tags(self, tokens: List, tags: List) -> List[Dict]:
+    def vectorize_token_tags(self, tokens: List, tags: List, pos: List) -> List[Dict]:
         """
         For training purposes, tokenization is ommitted: assume training data has
         to have tagged tokenized input
@@ -148,10 +180,13 @@ class Preprocessor:
         assert(len(tokens) == len(tags))
         sent_vec = [self.vocab.get_index_from_word(token) for token in tokens] # Tokens are strings
         ent_vec = [1 if "ENT1" in label else 2 if "ENT2" in label else 0 for label in tags]
+        pos_vec = [self.pos.get_index_from_pos(word_pos) for word_pos in pos]
         tags_vec = [self.labels.get_index_from_word(tag) for tag in tags]
         return [({ "sent_vec": np.asarray(sent_vec),
                    "ent_vec": np.asarray(ent_vec),
-                   "tags_vec": np.asarray(tags_vec) })]
+                   "tags_vec": np.asarray(tags_vec),
+                   "pos_vec": np.asarray(pos_vec)
+                   })]
 
 
     def pad_batch(self, batch_instances: List[Dict]):
