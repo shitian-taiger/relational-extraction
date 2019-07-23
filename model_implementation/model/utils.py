@@ -157,14 +157,17 @@ class Preprocessor:
         Returns:
             Dictionary of sent_vec (token indexes) and ent_vec (one-hot encoded)
         """
-        paired = self._pair_sentence_pred(sentence)
+        paired = self._pair_sentence_ent(sentence)
         vectorized_instances: List[Dict] = []
         for sent_pred_pair in paired:
-            tokens, pred_index = sent_pred_pair["tokens"], sent_pred_pair["pred_index"]
+            tokens, ents_index = sent_pred_pair["tokens"], sent_pred_pair["ents_index"]
             sent_vec = [self.vocab.get_index_from_word(token.text) for token in tokens] # Tokens are spacy tokens
-            ent_vec = [1 if i == pred_index else 0 for i in range(len((tokens)))]
+            ent_vec = [1 if i in ents_index[0] else 2 if i in ents_index[1] else 0 for i in range(len(tokens))]
+            pos_vec = [self.pos.get_index_from_pos(token.pos_) for token in tokens]
             vectorized_instances.append({ "sent_vec": np.asarray(sent_vec),
-                                          "ent_vec": np.asarray(ent_vec)})
+                                          "ent_vec": np.asarray(ent_vec),
+                                          "pos_vec": np.asarray(pos_vec)
+                                          })
         return vectorized_instances
 
 
@@ -237,14 +240,41 @@ class Preprocessor:
         return self.spacy_nlp(sentence)
 
 
-    def _pair_sentence_pred(self, sentence: str) -> List[Dict]:
+    def _pair_sentence_ent(self, sentence: str) -> List[Dict]:
         """
-        Tokenizes sentence, giving multiple instances of paired sentence with predicate index
-        Returns: List[{ "tokens": <Spacy Tokens>, "pred_index": int }]
         """
         tokens = self.tokenize(sentence)
-        predicate_indexes = [i for (i, t) in enumerate(tokens) if t.pos_ == "VERB"] # Get all indexes with predicates
-        return [ {"tokens": tokens, "pred_index": idx } for idx in predicate_indexes ]
+        ent_idx_map = self._get_entity_idx_map(tokens)
+        ent_idxs = list(ent_idx_map.values())
+        ent_pairs = []
+        for i, ent1_idx in enumerate(ent_idxs):
+            ent1_idxs = list(range(ent1_idx[0], ent1_idx[1] + 1))
+            ent_pairs = ent_pairs + [(ent1_idxs, list(range(ent2_idx[0], ent2_idx[1] + 1))) for ent2_idx in ent_idxs[i+1:]]
+        return [ {"tokens": tokens, "ents_index": idxs } for idxs in ent_pairs ]
+
+
+    def _get_entity_idx_map(self, tokens: List) -> Dict:
+        words : List[Dict] = [ {"text": token.text,
+                "ent_type": token.ent_type_ if not token.ent_type_ == "" else None,
+                } for token in tokens ]
+        noun_chunks = [(ent.start, ent.end - 1) for ent in tokens.noun_chunks]
+        named_ents = []
+        for chunk in noun_chunks: # Consolidate entity tags to named entity chunks
+            if words[chunk[0]]["ent_type"] is not None:
+                named_ents.append(chunk)
+            elif words[chunk[0]]["text"].lower() == "the": # Allow first word of named entity chunk to be 'the'
+                if words[chunk[1]]["ent_type"] is not None:
+                    named_ents.append(chunk)
+        entities: List[str] = [] # String entities
+        ent_idx_map: Dict = {} # Entity index corresponding to entities
+        for named_ent in (named_ents):
+            start, end = named_ent[0], named_ent[1]
+            entity = " ".join([words[i]["text"] for i in range(start, end + 1)])
+            entities.append(entity)
+            ent_idx_map[entity] = (start, end)
+
+        return ent_idx_map
+
 
 
 
