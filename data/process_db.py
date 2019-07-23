@@ -25,6 +25,8 @@ def process_db(filename):
     instance_cursor = connection.cursor()
 
     iob_file = open(filename, "a+")
+
+    NUM_PROCESSED = 0
     # Select only processed sentence instances
     sentence_cursor.execute('SELECT * FROM {} WHERE processed=1 AND LENGTH(valid_keys) > 0'.format(SENTENCE_TABLE))
     for row in sentence_cursor:
@@ -34,10 +36,13 @@ def process_db(filename):
         for key in valid_keys:
             instance_cursor.execute("SELECT * FROM PositiveInstance WHERE rowid={}".format(key))
             instance = instance_to_iob(sentence, instance_cursor.fetchone())
-            iob_file.write(instance)
+            if not instance == "":
+                NUM_PROCESSED += 1
+                iob_file.write(instance)
         for key in invalid_keys:
             instance_cursor.execute("SELECT * FROM NegativeInstance WHERE rowid={}".format(key))
 
+    print(NUM_PROCESSED)
     iob_file.close()
 
 
@@ -75,7 +80,7 @@ def instance_to_iob(sentence: str, instance: Tuple):
     nlp = spacy.load('en_core_web_sm')
     pos_tags = [token.pos_ for token in nlp(sentence)]
 
-    ent1, rel, ent2 = instance[0] + " ", instance[1] + " ", instance[2] + " "
+    ent1, rel, ent2 = instance[0], instance[1], instance[2]
     args = [{"phrase": ent1, "tag": "ENT1", "idxs": (sentence.find(ent1), sentence.find(ent1) + len(ent1)) }, \
             {"phrase": rel, "tag": "REL", "idxs": (sentence.find(rel), sentence.find(rel) + len(rel))}, \
             {"phrase": ent2, "tag": "ENT2", "idxs": (sentence.find(ent2), sentence.find(ent2) + len(ent2))}]
@@ -100,9 +105,12 @@ def instance_to_iob(sentence: str, instance: Tuple):
 
     # Add word_index and pos tag per token, skip the first element ""
     iob_instance = []
-    for i, row, in enumerate(instance.split("\n")[1:]):
-        iob_instance.append("\t".join([str(i), row, pos_tags[i]]))
-    return "\n".join(["\n".join(iob_instance), "", ""])
+    try:
+        for i, row, in enumerate(instance.split("\n")[1:]):
+            iob_instance.append("\t".join([str(i), row, pos_tags[i]]))
+        return "\n".join(["\n".join(iob_instance), "", ""])
+    except:
+        return ""
 
 
 if __name__ == "__main__":
