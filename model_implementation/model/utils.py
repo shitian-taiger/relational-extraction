@@ -5,6 +5,7 @@ from torch import Tensor
 from pathlib import Path
 from typing import Dict, List
 from enum import Enum
+from model.allen_models import NER
 
 
 class Constants:
@@ -150,12 +151,15 @@ class Preprocessor:
         self.vocab = vocab
         self.labels = labels
         self.pos = pos
+        self.ner = NER()
+
 
     def vectorize_sentence(self, sentence: str) -> List[Dict]:
         """
-        Tokenizes and indexes sentences based on given vocabulary
+        Purely for prediction purposes, tokenizes and generates vectors for entity and part-of-speech
         Returns:
-            Dictionary of sent_vec (token indexes) and ent_vec (one-hot encoded)
+            Dictionary of sent_vec (token indexes), ent_vec (1 for ENT1, 2 for ENT2, 0 otherwise),
+            pos_vec (index of POS tag of each token)
         """
         paired = self._pair_sentence_ent(sentence)
         vectorized_instances: List[Dict] = []
@@ -242,11 +246,17 @@ class Preprocessor:
 
     def _pair_sentence_ent(self, sentence: str) -> List[Dict]:
         """
+        Tokenizes and generates index pairs of entities (external NER detection)
+        Returns:
+            List of Dict each: { sentence as list of Spacy tokens,
+                                 pair of entity indexes as Tuple of 2 lists containing their indexes }
         """
         tokens = self.tokenize(sentence)
         ent_idx_map = self._get_entity_idx_map(tokens)
         ent_idxs = list(ent_idx_map.values())
         ent_pairs = []
+        # Create instances for permutations of entities
+        # TODO Swapped entity order as well to accomodate directional relation
         for i, ent1_idx in enumerate(ent_idxs):
             ent1_idxs = list(range(ent1_idx[0], ent1_idx[1] + 1))
             ent_pairs = ent_pairs + [(ent1_idxs, list(range(ent2_idx[0], ent2_idx[1] + 1))) for ent2_idx in ent_idxs[i+1:]]
@@ -254,6 +264,13 @@ class Preprocessor:
 
 
     def _get_entity_idx_map(self, tokens: List) -> Dict:
+        """
+        NER detection using external methods
+        TODO Incorporate upstream NER
+        Returns:
+            Dictionary with key: (Entity: str), value: (Start and End index of entity within sentence: Tuple)
+        """
+
         words : List[Dict] = [ {"text": token.text,
                 "ent_type": token.ent_type_ if not token.ent_type_ == "" else None,
                 } for token in tokens ]
@@ -274,6 +291,11 @@ class Preprocessor:
             ent_idx_map[entity] = (start, end)
 
         return ent_idx_map
+
+        # For ALLEN-NER
+        # words = self.ner.get_tagged_tokens(sentence)
+        # entities, ent_idx_map = self.ner.get_entities(words)
+        # return ent_idx_map
 
 
 

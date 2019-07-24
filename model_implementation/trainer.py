@@ -85,6 +85,8 @@ class Trainer:
         self.model.train = False
         self.model.load_state_dict(torch.load('./saved/model_epoch90'))
         vectorized_sentence = self.preprocessor.vectorize_sentence(sentence)
+        if len(vectorized_sentence) == 0: # No named entities found, shortcircuit
+            return []
         model_input = self.preprocess_batch_tagless(vectorized_sentence)
         output = self.model(model_input)
         output_tags = self.decoder.decode(output)["tags"]
@@ -98,6 +100,16 @@ class Trainer:
 
 
     def _parse_tags(self, output_dict: Dict):
+        """
+        Given a vectorized sentence (vocabulary word indexes) and output tags for the sentence,
+        generate tuples of relations
+        Arguments:
+            Dictionary containing "sent_vec": `sentence vector` and "tags_list": `list of tags`
+            Note that tags is a nested list since multiple predicates can be present in the sentence
+        Returns:
+            tuples: List of < ent1: str, rels: List[str], ent2: str > tuples
+              - (multiple rels possible for two entities)
+        """
         tokens, tags_list, vectorized_instances = output_dict["tokens"], output_dict["tags_list"], output_dict["vectorized_instances"]
         assert(len(tags_list) == len(vectorized_instances))
 

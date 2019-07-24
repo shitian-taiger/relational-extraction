@@ -14,15 +14,15 @@ impl_dir = Path(__file__).parent.resolve()
 glove_url = "http://nlp.stanford.edu/data/glove.6B.zip"
 glove_zip_path = Path.joinpath(impl_dir, "glove.6B.zip")
 glove_dir_path = Path.joinpath(impl_dir, "glove.6B")
-glove_dir_path.mkdir(parents=True, exist_ok=True)
 
 # Download and unzip if not present
-if not Path(glove_dir_path).exists():
+if not Path(glove_dir_path).exists(): # Assume if directory exists, GLOVE embeddings already downloaded
     if not Path(glove_zip_path).exists():
         print("Downloading GLOVE embeddings")
         urllib.request.urlretrieve(glove_url, glove_zip_path)
     with zipfile.ZipFile(glove_zip_path,"r") as zip_ref:
         zip_ref.extractall(glove_dir_path)
+    glove_dir_path.mkdir(parents=True, exist_ok=True) # Create storage directory
 
 # Write tokens to file
 print("Extracting GLOVE tokens and embeddings")

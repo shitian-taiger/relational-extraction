@@ -11,8 +11,7 @@ class REModel(torch.nn.Module):
     """
     Bi-LSTM model: 1 to 1 tagging
 
-    Tokenized Input -> Token + NE Embeddings -> Bi-LSTM -> Tag Embeddings
-
+    Tokenized Input -> Token + NE Embeddings + POS Embeddings -> Bi-LSTM -> Tag Embeddings
 
       -- Tag Embeddings: n-dim Vector to logits per Bi-LSTM token output
       -- Logits require further processing in Decoder to produce valid BIO Tags
@@ -90,7 +89,7 @@ class REModel(torch.nn.Module):
         if self.config["labels_dir"]:
             labels_dir = self.config["labels_dir"]
             if Path.exists(Path.joinpath(labels_dir, "tag_layer_weights")) and \
-               Path.exists(Path.joinpath(labels_dir, "tag_layer_weights")):
+               Path.exists(Path.joinpath(labels_dir, "tag_layer_bias")):
                 tag_layer_weights = torch.load(Path.joinpath(labels_dir, "tag_layer_weights"))
                 tag_layer_bias = torch.load(Path.joinpath(labels_dir, "tag_layer_bias"))
                 self.tag_layer.weight = tag_layer_weights
@@ -177,7 +176,7 @@ class REModel(torch.nn.Module):
 
     def _compute_loss(self, logits: Tensor, tags: Tensor, mask: Tensor) -> Tensor:
         """
-        Computes log-softmax loss, mask is required for omitting of padding for variable length sequences
+        Computes log-softmax loss on IOB tags for each token, mask is required for omitting of padding for variable length sequences
         """
         logits_flat = logits.view(-1, logits.size(-1)) # (batch * sequence_length, num_classes)
         log_probs_flat = torch.nn.functional.log_softmax(logits_flat, dim=-1) # (batch * sequence_length, num_classes)

@@ -16,15 +16,15 @@ db_file_path = Path.joinpath(Path(__file__).parent, "store.db")
 nlp = English()
 tokenizer = nlp.Defaults.create_tokenizer(nlp)
 
-def process_db(filename):
+def process_db(instance_file):
     """
-    Retrieves the positive and negative instances for each sentence, generates IOB2 tags for positive instances
+    Retrieves the positive and negative instances for each sentence, generates IOB2 tags for positive instances and saves to file
     """
     connection = sqlite3.connect(str(db_file_path))
     sentence_cursor = connection.cursor()
     instance_cursor = connection.cursor()
 
-    iob_file = open(filename, "a+")
+    iob_file = open(instance_file, "a+")
 
     NUM_PROCESSED = 0
     # Select only processed sentence instances
@@ -73,8 +73,11 @@ def instance_to_iob(sentence: str, instance: Tuple):
     -- Assumptions:
        - Singular instance of entity and relation within sentence
 
+    Arguments:
+        sentence: Entire sentence as string
+        instance: Tuple of strings of < ent1, rel, ent2 >
     Returns:
-       iob_instance: `\n` separated tokens with each row: <word_index>, <token>, <IOB-2 tag>
+        iob_instance: `\n` separated tokens with each row: <word_index>, <token>, <IOB-2 tag>
     """
 
     nlp = spacy.load('en_core_web_sm')
