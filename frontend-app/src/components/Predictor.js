@@ -88,7 +88,7 @@ class SentenceInput extends React.Component {
   }
 
   handleChange(event) {
-    let sentence = event.target.value.replace(/\"/g, "'");
+    let sentence = event.target.value.replace(/"/g, "'");
     this.setState({sentence: sentence});
   }
 

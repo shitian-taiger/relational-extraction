@@ -15,7 +15,9 @@ Installation of packages:
 Dependency Installations:\
 `npm install` within `./frontend-app`\
 Start server:\
-`npm start` within `./frontend-app`
+`npm start` within `./frontend-app`\
+
+***Refer to front-end README for more info***
 
 ### Back End
 Start server:\
