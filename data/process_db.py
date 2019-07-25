@@ -16,15 +16,17 @@ db_file_path = Path.joinpath(Path(__file__).parent, "store.db")
 nlp = English()
 tokenizer = nlp.Defaults.create_tokenizer(nlp)
 
-def process_db(filename):
+def process_db(instance_file):
     """
-    Retrieves the positive and negative instances for each sentence, generates IOB2 tags for positive instances
+    Retrieves the positive and negative instances for each sentence, generates IOB2 tags for positive instances and saves to file
     """
     connection = sqlite3.connect(str(db_file_path))
     sentence_cursor = connection.cursor()
     instance_cursor = connection.cursor()
 
-    iob_file = open(filename, "a+")
+    iob_file = open(instance_file, "a+")
+
+    NUM_PROCESSED = 0
     # Select only processed sentence instances
     sentence_cursor.execute('SELECT * FROM {} WHERE processed=1 AND LENGTH(valid_keys) > 0'.format(SENTENCE_TABLE))
     for row in sentence_cursor:
@@ -34,10 +36,13 @@ def process_db(filename):
         for key in valid_keys:
             instance_cursor.execute("SELECT * FROM PositiveInstance WHERE rowid={}".format(key))
             instance = instance_to_iob(sentence, instance_cursor.fetchone())
-            iob_file.write(instance)
+            if not instance == "":
+                NUM_PROCESSED += 1
+                iob_file.write(instance)
         for key in invalid_keys:
             instance_cursor.execute("SELECT * FROM NegativeInstance WHERE rowid={}".format(key))
 
+    print(NUM_PROCESSED)
     iob_file.close()
 
 
@@ -63,38 +68,52 @@ def tag_phrase(phrase: str, tag: str):
 
 def instance_to_iob(sentence: str, instance: Tuple):
     """
-    Given an instance of a relational tuple, performs IOB-2 tagging with ("ENT1" / "REL" / "ENT2")
+    Given an instance of a relational tuple, performs IOB tagging with ("ENT1" / "REL" / "ENT2")
     FIXME Improve robustness
     -- Assumptions:
        - Singular instance of entity and relation within sentence
 
+    Arguments:
+        sentence: Entire sentence as string
+        instance: Tuple of strings of < ent1, rel, ent2 >
     Returns:
-       iob_instance: `\n` separated tokens with each row: <word_index>, <token>, <IOB-2 tag>
+        iob_instance: `\n` separated tokens with each row: <word_index>, <token>, <IOB-2 tag>
     """
+
+    nlp = spacy.load('en_core_web_sm')
+    pos_tags = [token.pos_ for token in nlp(sentence)]
+
     ent1, rel, ent2 = instance[0], instance[1], instance[2]
     args = [{"phrase": ent1, "tag": "ENT1", "idxs": (sentence.find(ent1), sentence.find(ent1) + len(ent1)) }, \
             {"phrase": rel, "tag": "REL", "idxs": (sentence.find(rel), sentence.find(rel) + len(rel))}, \
             {"phrase": ent2, "tag": "ENT2", "idxs": (sentence.find(ent2), sentence.find(ent2) + len(ent2))}]
     args.sort(key=lambda arg: arg["idxs"][0]) # Sort arguments by start index to facilitate tagging
 
-    # Separate sentence into phrases separated by `args`, tokenize and tag with `tag_phrase`
-    start_index = 0
+    # Separate sentence into phrases separated by `args`, tokenize and tag with `tag_phrase()`
+    curr_sentence_index = 0
     instance = ""
     for arg in args:
-        if not arg["idxs"][0] == 0:
-            out_phrase = sentence[start_index: arg["idxs"][0]]
-            instance = "".join([instance, tag_phrase(out_phrase, "O")])
-        instance = "".join([instance, tag_phrase(arg["phrase"], arg["tag"])])
-        start_index = arg["idxs"][1]
-    # Append last phrase
-    out_phrase = sentence[start_index: len(sentence) - 1]
-    instance = "".join([instance, tag_phrase(out_phrase, "O")])
+        # TEMP FIXME Arg not in sentence, fix in front-end
+        if arg["idxs"][0] == -1:
+            return ""
 
-    # Add word_index per token, skip the first element ""
+        if not arg["idxs"][0] == curr_sentence_index:
+            non_arg_phrase = sentence[curr_sentence_index: arg["idxs"][0]]
+            instance = "".join([instance, tag_phrase(non_arg_phrase, "O")])
+        instance = "".join([instance, tag_phrase(arg["phrase"], arg["tag"])])
+        curr_sentence_index = arg["idxs"][1]
+    # Append last phrase
+    non_arg_phrase = sentence[curr_sentence_index: len(sentence) - 1]
+    instance = "".join([instance, tag_phrase(non_arg_phrase, "O")])
+
+    # Add word_index and pos tag per token, skip the first element ""
     iob_instance = []
-    for i, row, in enumerate(instance.split("\n")[1:]):
-        iob_instance.append("\t".join([str(i), row]))
-    return "\n".join(["\n".join(iob_instance), "", ""])
+    try:
+        for i, row, in enumerate(instance.split("\n")[1:]):
+            iob_instance.append("\t".join([str(i), row, pos_tags[i]]))
+        return "\n".join(["\n".join(iob_instance), "", ""])
+    except:
+        return ""
 
 
 if __name__ == "__main__":

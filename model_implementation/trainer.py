@@ -1,13 +1,12 @@
 import re
 import torch
 from torch.nn.utils.rnn import pack_padded_sequence
-
+from pathlib import Path
 from typing import Tuple, Dict, List
-from model.decoder import Decoder
-from model.model import REModel
-from model.utils import *
-
-from data_utils import get_tokens_oie
+from model_implementation.model.decoder import Decoder
+from model_implementation.model.model import REModel
+from model_implementation.model.utils import *
+from model_implementation.data_utils import parse_generated_instances
 
 class Trainer:
 
@@ -29,14 +28,18 @@ class Trainer:
         """
 
         self.vocab = Vocabulary(model_config["tokens_dir"])
-        model_config["num_embeddings"] = self.vocab.vocab_len
+        model_config["num_tokens"] = self.vocab.vocab_len
         self.labels = Labels(model_config["labels_dir"])
+        model_config["num_classes"] = self.labels.labels_len
+        self.pos = POS(model_config["pos_dir"])
+        model_config["num_pos"] = self.pos.pos_len
+        self.preprocessor = Preprocessor(self.vocab, self.labels, self.pos)
+
         self.model = REModel(model_config)
-        self.preprocessor = Preprocessor(self.vocab, self.labels)
         self.decoder = Decoder(self.vocab, self.labels)
 
         if training_config:
-            self.training_config = training_config
+            self.training_config: Dict = training_config
             self.optimizer = torch.optim.Adam(self.model.parameters())
 
 
@@ -50,46 +53,100 @@ class Trainer:
         batch_size = self.training_config["batch_size"]
 
         for i in range(epochs):
-            batch_tokens, batch_tags = [], []
-            for tokens, tags in get_tokens_oie(file_dir):
+            if i % 10 == 0: # Save trained model
+                print("Saving for epoch {}".format(i))
+                torch.save(self.model.state_dict(), Path.joinpath(self.training_config["save_path"], "model_epoch{}".format(i)))
+
+            batch_tokens, batch_tags, batch_pos = [], [], []
+            for tokens, tags, pos in parse_generated_instances(self.training_config["traindata_file"]):
                 if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
                     self.optimizer.zero_grad() # Clear optimizer gradients
 
-                    model_input = self.preprocess_batch(batch_tokens, batch_tags)
-                    output = self.model(model_input)
-                    loss = output["loss"]
-                    loss.backward()
-                    self.optimizer.step()
+                    try:
+                        model_input = self.preprocess_batch(batch_tokens, batch_tags, batch_pos)
+                        output = self.model(model_input)
 
-                    print("Batch loss: {}".format(loss))
+                        output_tags = self.decoder.decode(output)["tags"]
+                        loss = output["loss"]
+                        loss.backward()
+                        self.optimizer.step()
 
-                    batch_tokens, batch_tags = [], []
+                        print("Batch loss: {}".format(loss))
+                    except:
+                        pass
 
-                if tokens and tags: # Omit cases where there are empty sentences
-                    batch_tokens.append(tokens)
-                    batch_tags.append(tags)
+                    batch_tokens, batch_tags, batch_pos = [], [], []
+                batch_tokens.append(tokens)
+                batch_tags.append(tags)
+                batch_pos.append(pos)
 
 
     def predict(self, sentence: str):
         """
         Prediction for sentence, not applicable for training
-        Returns list of string (tri)tuples of <ent, rel, ent>
         """
         self.model.train = False
-        vectorized_sentence = self.preprocessor.vectorize_sentence(sentence)[0]["sent_vec"]
-        model_input = self.preprocess_batch_tagless([sentence])
+        saved_model_path = Path.joinpath(Path(__file__).parent, 'saved/model_epoch90')
+        self.model.load_state_dict(torch.load(saved_model_path))
+        vectorized_sentence = self.preprocessor.vectorize_sentence(sentence)
+        if len(vectorized_sentence) == 0: # No named entities found, shortcircuit
+            return []
+        model_input = self.preprocess_batch_tagless(vectorized_sentence)
         output = self.model(model_input)
         output_tags = self.decoder.decode(output)["tags"]
         # Tuples of token indexes
         rel_tuples: List[Tuple] = self._parse_tags({
-            "tokens": self.preprocessor.tokenize(sentence), # For getting token with UNK tag
+            "tokens": self.preprocessor.tokenize(sentence), # For getting tokens with UNK tag
             "tags_list": output_tags, # Mutiple tag ouputs possible per sentence
-            "sent_vec": vectorized_sentence})
+            "vectorized_instances": vectorized_sentence
+            })
         return rel_tuples
 
 
     def _parse_tags(self, output_dict: Dict):
         """
+        Given a vectorized sentence (vocabulary word indexes) and output tags for the sentence,
+        generate tuples of relations
+        Arguments:
+            Dictionary containing "sent_vec": `sentence vector` and "tags_list": `list of tags`
+            Note that tags is a nested list since multiple predicates can be present in the sentence
+        Returns:
+            tuples: List of < ent1: str, rels: List[str], ent2: str > tuples
+              - (multiple rels possible for two entities)
+        """
+        tokens, tags_list, vectorized_instances = output_dict["tokens"], output_dict["tags_list"], output_dict["vectorized_instances"]
+        assert(len(tags_list) == len(vectorized_instances))
+
+        tuples: List[Tuple] = []
+        for n, vectorized_instance in enumerate(vectorized_instances):
+            ent1, rels, ent2 = "", [], ""
+            ent_vector = vectorized_instance['ent_vec']
+            tags = tags_list[n]
+            rel = ""
+            for i, token in enumerate(tokens):
+                if ent_vector[i] == 1:
+                    ent1 = " ".join([ent1, token.text]) if ent1 else token.text
+                elif ent_vector[i] == 2:
+                    ent2 = " ".join([ent2, token.text]) if ent2 else token.text
+                else:
+                    tag = tags[i]
+                    if re.search("B-", tag):
+                        if not rel == "":
+                            rels.append(rel)
+                        rel = token.text
+                    elif re.search("I-", tag):
+                        rel = " ".join([rel, token.text])
+                    else: # O tag
+                        if not rel == "":
+                            rels.append(rel)
+                        rel = ""
+            tuples.append((ent1, rels, ent2))
+        return(tuples)
+
+
+    def _parse_tags_OIE(self, output_dict: Dict):
+        """
+        TODO (Deprecate) Parsing for OIE output
         Given a vectorized sentence (vocabulary word indexes) and output tags for the sentence,
         generate tuples of relations
         Arguments:
@@ -167,41 +224,40 @@ class Trainer:
         return phrase
 
 
-    def preprocess_batch_tagless(self, sentences: List[str]):
+    def preprocess_batch_tagless(self, instances_dict):
         """
         Preprocessing for sentences, purely for prediction purposes, tags not required
         Arguments:
-            sentence: List of string sentences
+            batch_instances: List of output of vectorize_token_tags -
+                             (Dict of token_vector, entity_vector, pos_vector, tags_vector [Optional])
         Returns:
-            Dictionary of sentence vector (tensor of token indexes), predicate vector (one-hot),
-            sequence_lengths and sequence mask
+            Dictionary of sentence vector (token indexes), entity vector,
+            sequence_lengths and sequence mask and tags vector (tag indexes)
         """
-        vectorized_pairs: List[Dict] = []
-        for i, sentence in enumerate(sentences):
-            vectorized_pair = self.preprocessor.vectorize_sentence(sentence)
-            vectorized_pairs += vectorized_pair
-        sents, preds, lens, mask = self.preprocessor.pad_batch(vectorized_pairs)
-        return { "sent_vec": sents.long(), "pred_vec": preds.long(),
-                 "lengths": lens, "mask": mask }
+        sents_vec, ents_vec, pos_vec, lens_vec, mask = self.preprocessor.pad_batch(instances_dict)
+        return { "sent_vec": sents_vec.long(), "ent_vec": ents_vec.long(), "pos_vec": pos_vec.long(),
+                 "lengths": lens_vec, "mask": mask }
 
 
-    def preprocess_batch(self, tokens_list: List[List], tags_list: List[List]):
+    def preprocess_batch(self, tokens_list: List[List], tags_list: List[List], pos_list: List[List]):
         """
         Preprocessing for tokens and tags for training
         Arguments:
             tokens_list: List of (List of string words)
             tags_list: List of (List of string tags)
+            pos_list: List of (List of string word POS)
         Returns:
-            Dictionary of sentence vector (token indexes), predicate vector (one-hot),
+            Dictionary of sentence vector (token indexes), entity vector,
             sequence_lengths and sequence mask and tags vector (tag indexes)
         """
         assert(len(tokens_list) == len(tags_list))
         vectorized_list: List[Dict] = []
         for i, tokens in enumerate(tokens_list):
             tags = tags_list[i]
-            vectorized: List[Dict] = self.preprocessor.vectorize_token_tags(tokens, tags)
+            pos = pos_list[i]
+            vectorized: List[Dict] = self.preprocessor.vectorize_token_tags(tokens, tags, pos)
             vectorized_list += vectorized
-        sents, preds, lens, mask, tags = self.preprocessor.pad_batch(vectorized_list)
-        return { "sent_vec": sents.long(), "pred_vec": preds.long(),
-                "lengths": lens, "mask": mask, "tags_vec": tags }
+        sents_vec, ents_vec, pos_vec, lens_vec, mask, tags_vec = self.preprocessor.pad_batch(vectorized_list)
+        return { "sent_vec": sents_vec.long(), "ent_vec": ents_vec.long(), "pos_vec": pos_vec.long(),
+                "lengths": lens_vec, "mask": mask, "tags_vec": tags_vec.long() }
 
