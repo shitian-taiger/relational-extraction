@@ -20,14 +20,20 @@ if not Path(glove_dir_path).exists(): # Assume if directory exists, GLOVE embedd
     if not Path(glove_zip_path).exists():
         print("Downloading GLOVE embeddings")
         urllib.request.urlretrieve(glove_url, glove_zip_path)
+
+    glove_dir_path.mkdir(parents=True, exist_ok=True) # Create storage directory
     with zipfile.ZipFile(glove_zip_path,"r") as zip_ref:
         zip_ref.extractall(glove_dir_path)
-    glove_dir_path.mkdir(parents=True, exist_ok=True) # Create storage directory
+    Path.unlink(glove_zip_path) # Remove zip file
 
 # Write tokens to file
 print("Extracting GLOVE tokens and embeddings")
-embedding_filepath = Path.joinpath(glove_dir_path, 'glove.6B.100d.txt')
 token_filepath = Path.joinpath(glove_dir_path, 'tokens.txt')
+token_embedder_filepath = Path.joinpath(glove_dir_path, 'token_embedder')
+tokens_dir = Path.joinpath(impl_dir, "Custom/tokens/")
+tokens_dir.mkdir(parents=True, exist_ok=True)
+
+embedding_filepath = Path.joinpath(glove_dir_path, 'glove.6B.100d.txt')
 token_file = open(token_filepath, "a+")
 embedding_vectors = []
 with open(embedding_filepath) as emb_file: # Read tokens only and write to tokens file
@@ -44,7 +50,15 @@ embedding_matrix = np.zeros((len(embedding_vectors) + 2, 100))
 for i, vector in enumerate(embedding_vectors):
     embedding_matrix[i + 2] = vector
 embedding_tensor = torch.Tensor(embedding_matrix)
-torch.save(embedding_tensor, Path.joinpath(glove_dir_path, 'token_embedder'))
+torch.save(embedding_tensor, token_embedder_filepath)
+
+# Move processed files to Custom folder
+shutil.move(token_filepath, Path(tokens_dir, 'tokens.txt'))
+shutil.move(token_embedder_filepath, Path(tokens_dir, 'token_embedder'))
+
+# Create save_dir
+save_path = Path.joinpath(impl_dir, "saved")
+save_path.mkdir(parents=True, exist_ok=True)
 
 
 # FOR ALLEN OIE MODEL ONLY

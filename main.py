@@ -3,7 +3,6 @@ from model_implementation.trainer import Trainer
 
 # Implementation root
 impl_root = Path.joinpath(Path(__file__).parent.resolve(), 'model_implementation')
-print(impl_root)
 
 # Data
 traindata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated_instances.txt")

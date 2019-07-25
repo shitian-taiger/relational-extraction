@@ -5,8 +5,8 @@ from flask import Flask, request, jsonify, send_file
 from pathlib import Path
 
 # Model
-from test_implementation.trainer import Trainer
-from test_implementation.main import model_config, training_config
+from model_implementation.trainer import Trainer
+from model_implementation.main import model_config, training_config
 
 # Instance generation
 from generation.allen_models import DepParse

@@ -9,7 +9,7 @@ brat_preprocessing/annotated
 generation/archived_models
 model_implementation/glove.6B
 model_implementation/AllenOIE
-model_implementation/Custom
+model_implementation/Custom/tokens
 frontend-app/node_modules/
 frontend-app/package-lock.json
 frontend-app/.gitignore

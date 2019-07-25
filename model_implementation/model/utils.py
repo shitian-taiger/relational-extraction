@@ -5,7 +5,6 @@ from torch import Tensor
 from pathlib import Path
 from typing import Dict, List
 from enum import Enum
-from model.allen_models import NER
 
 
 class Constants:
@@ -151,7 +150,6 @@ class Preprocessor:
         self.vocab = vocab
         self.labels = labels
         self.pos = pos
-        self.ner = NER()
 
 
     def vectorize_sentence(self, sentence: str) -> List[Dict]:

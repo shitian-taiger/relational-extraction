@@ -3,10 +3,10 @@ import torch
 from torch.nn.utils.rnn import pack_padded_sequence
 from pathlib import Path
 from typing import Tuple, Dict, List
-from model.decoder import Decoder
-from model.model import REModel
-from model.utils import *
-from data_utils import parse_generated_instances
+from model_implementation.model.decoder import Decoder
+from model_implementation.model.model import REModel
+from model_implementation.model.utils import *
+from model_implementation.data_utils import parse_generated_instances
 
 class Trainer:
 
@@ -62,15 +62,18 @@ class Trainer:
                 if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
                     self.optimizer.zero_grad() # Clear optimizer gradients
 
-                    model_input = self.preprocess_batch(batch_tokens, batch_tags, batch_pos)
-                    output = self.model(model_input)
+                    try:
+                        model_input = self.preprocess_batch(batch_tokens, batch_tags, batch_pos)
+                        output = self.model(model_input)
 
-                    output_tags = self.decoder.decode(output)["tags"]
-                    loss = output["loss"]
-                    loss.backward()
-                    self.optimizer.step()
+                        output_tags = self.decoder.decode(output)["tags"]
+                        loss = output["loss"]
+                        loss.backward()
+                        self.optimizer.step()
 
-                    print("Batch loss: {}".format(loss))
+                        print("Batch loss: {}".format(loss))
+                    except:
+                        pass
 
                     batch_tokens, batch_tags, batch_pos = [], [], []
                 batch_tokens.append(tokens)
@@ -83,7 +86,8 @@ class Trainer:
         Prediction for sentence, not applicable for training
         """
         self.model.train = False
-        self.model.load_state_dict(torch.load('./saved/model_epoch90'))
+        saved_model_path = Path.joinpath(Path(__file__).parent, 'saved/model_epoch90')
+        self.model.load_state_dict(torch.load(saved_model_path))
         vectorized_sentence = self.preprocessor.vectorize_sentence(sentence)
         if len(vectorized_sentence) == 0: # No named entities found, shortcircuit
             return []
