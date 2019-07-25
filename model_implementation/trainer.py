@@ -42,7 +42,7 @@ class Trainer:
 
         if training_config:
             self.training_config: Dict = training_config
-            self.optimizer = torch.optim.Adam(self.model.parameters())
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=training_config["learning_rate"])
 
 
     def train(self):
@@ -54,41 +54,44 @@ class Trainer:
         epochs = self.training_config["epochs"]
         batch_size = self.training_config["batch_size"]
 
-        for i in range(epochs):
-            if i % 10 == 0: # Save trained model
-                print("Saving for epoch {}".format(i))
-                torch.save(self.model.state_dict(), Path.joinpath(self.training_config["save_path"], "model_epoch{}".format(i)))
-
+        for epoch in range(1, epochs + 1):
+            print("Epoch {}".format(epoch))
             batch_tokens, batch_tags, batch_pos = [], [], []
             for tokens, tags, pos in parse_generated_instances(self.training_config["traindata_file"]):
                 if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
-                    self.optimizer.zero_grad() # Clear optimizer gradients
+                    try:
+                        self.optimizer.zero_grad() # Clear optimizer gradients
 
-                    model_input = self.preprocess_batch(batch_tokens, batch_tags, batch_pos)
-                    output = self.model(model_input)
+                        model_input = self.preprocess_batch(batch_tokens, batch_tags, batch_pos)
+                        output = self.model(model_input)
 
-                    loss = output["loss"]
-                    loss.backward()
-                    self.optimizer.step()
+                        loss = output["loss"]
+                        loss.backward()
+                        self.optimizer.step()
 
-                    gold_tags = []
-                    for single_batch_tags in batch_tags:
-                        gold_tags.append([self.labels.get_index_from_word(tag) for tag in single_batch_tags])
-                    gold_tags = [j for i in gold_tags for j in i]
-                    predicted_tags = self.decoder.decode(output)["tag_indexes"]
-                    predicted_tags = [j for i in predicted_tags for j in i]
-                    precision, recall, f1, _ = precision_recall_fscore_support(gold_tags, predicted_tags, average='weighted')
+                        gold_tags = []
+                        for single_batch_tags in batch_tags:
+                            gold_tags.append([self.labels.get_index_from_word(tag) for tag in single_batch_tags])
+                        gold_tags = [j for epoch in gold_tags for j in epoch]
+                        predicted_tags = self.decoder.decode(output)["tag_indexes"]
+                        predicted_tags = [j for epoch in predicted_tags for j in epoch]
+                        precision, recall, f1, _ = precision_recall_fscore_support(gold_tags, predicted_tags, average='weighted')
 
-                    print("Batch loss: {}".format(loss))
-                    print("Precision: {} | Recall: {} | F1: {}".format(precision, recall, f1))
+                        print("Batch loss: {}".format(loss))
+                        print("Batch Precision: {} | Recall: {} | F1: {}".format(precision, recall, f1))
 
-                    # except Exception as e:
-                    #     print("Exception {}".format(e))
+                    except Exception as e:
+                        print("Exception {}".format(e))
 
                     batch_tokens, batch_tags, batch_pos = [], [], []
                 batch_tokens.append(tokens)
                 batch_tags.append(tags)
                 batch_pos.append(pos)
+
+            if epoch % self.training_config["save_on_epochs"] == 0: # Save trained model
+                print("Saving model for epoch {}".format(epoch))
+                torch.save(self.model.state_dict(), Path.joinpath(self.training_config["save_path"], "model_epoch{}".format(epoch)))
+
 
 
     def predict(self, sentence: str):

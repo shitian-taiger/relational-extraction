@@ -41,11 +41,12 @@ model_config = {
 save_path = Path.joinpath(impl_root, "saved")
 
 training_config = {
-    "epochs": 101,
-    "batch_size": 50,
-    "learning_rate": 0.01,
+    "epochs": 100,
+    "batch_size": 5,
+    "learning_rate": 0.001,
     "traindata_file": traindata_file,
     "testdata_file": testdata_file,
+    "save_on_epochs": 5, # Every x number of epochs to save on
     "save_path": save_path
 }
 

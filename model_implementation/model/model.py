@@ -35,6 +35,7 @@ class REModel(torch.nn.Module):
         token_emb_weights = torch.load(Path.joinpath(token_embedding_dir, "token_embedder"))
         self.token_embedding = torch.nn.Embedding(self.config["num_tokens"], self.config["token_embedding_dim"],
                                                   Constants.PAD_INDEX, _weight=token_emb_weights)
+        self.token_embedding.weight.requires_grad = False # Don't train token embeddings
 
         # TODO (DEPRECATE) Verb embeddings only applicable ALLEN-OIE model
         if "verb_embedding" in self.config.keys():
@@ -188,7 +189,7 @@ class REModel(torch.nn.Module):
 
         negative_log_likelihood_flat = -torch.gather(log_probs_flat, dim=1, index=tags_flat)
         negative_log_likelihood = negative_log_likelihood_flat.view(*tags.size())
-        negative_log_likelihood = negative_log_likelihood * mask.float()
+        negative_log_likelihood = negative_log_likelihood.cpu() * mask.float()
 
         per_batch_loss = negative_log_likelihood.sum(1) / (mask.sum(1).float() + 1e-13)
         num_non_empty_sequences = ((mask.sum(1) > 0).float().sum() + 1e-13)
