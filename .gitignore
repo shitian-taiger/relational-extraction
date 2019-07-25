@@ -1,6 +1,7 @@
 .vscode/
 .DS_Store
 .ipynb_checkpoints
+*.ipynb
 __pycache__/
 data/OIE
 data/RE

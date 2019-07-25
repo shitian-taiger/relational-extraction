@@ -1,6 +1,7 @@
-from typing import Dict, List
+import csv
 import re
 import pandas as pd
+from typing import Dict, List
 from string import punctuation
 
 def format_label(label: str):
@@ -77,7 +78,7 @@ def parse_generated_instances(file_path: str):
     word_id | word | label
         - label: (B/I - ENT1) | (B/I - REL) | (B/I - ENT2) | O)
     """
-    df = pd.read_csv(file_path, sep="\t", names=["word_id", "word", "label", "pos"])
+    df = pd.read_csv(file_path, sep="\t", names=["word_id", "word", "label", "pos"], quoting=csv.QUOTE_NONE)
     tokens, tags, pos = [], [], []
     for _, row in df.iterrows():
         token = row['word']
