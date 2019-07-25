@@ -14,18 +14,23 @@ class Trainer:
     def __init__(self, model_config: Dict, training_config=None):
         """
         Arguments:
+
             model_config : Configuration of model to be trained:
                 -- input_size: LSTM input
                 -- hidden_size: LSTM hidden state
                 -- highway: Highway connections in LSTM
                 -- layers: Number of LSTM layers
-                -- custom_weights: File path to weights
-                -- custom_vocab: File path to vocabulary and labels
-                -- custom_embedding: File path to embedding
-                -- embedding_dim: Dimension of word embedding
-                -- num_classes: Corresponds to types of output IOB2 tags
+                -- weights_dir: Directory for LSTM weights
+                -- tokens_dir: Directory containing tokens.txt and embeddings
+                -- pos_dir: Directory containing pos.txt and corresponding embeddings
+                -- labels_dir: Directory containing labels.txt and corresponding weights and bias
+                -- token_embedding_dim
+                -- ne_embedding_dim
+                -- pos_embedding_dim
 
-            training_config: Training Configurations including batch_size etc
+            * Ensure token_embedding_dim + ne_embedding_dim + pos_embedding_dim = input_size
+
+            training_config: Training Configurations including epochs, batch_size etc
         """
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -54,10 +59,20 @@ class Trainer:
         epochs = self.training_config["epochs"]
         batch_size = self.training_config["batch_size"]
 
+        print("=================================================")
+        print("Total Epochs: {}".format(self.training_config["epochs"]))
+        print("Batch Size: {}".format(self.training_config["batch_size"]))
+        print("Saving on every {} epochs.".format(self.training_config["save_on_epochs"]))
+        print("Model Save Path: {}".format(self.training_config["save_path"]))
+        print("=================================================")
+
+        # TODO Shuffling of data and Validation Set (Currently unable to process entire file all at once)
         for epoch in range(1, epochs + 1):
-            print("Epoch {}".format(epoch))
+            print("Epoch {}\n--------------------------------------------------\n".format(epoch))
             batch_tokens, batch_tags, batch_pos = [], [], []
+            batch_num, total_loss, total_f1 = 0, 0, 0
             for tokens, tags, pos in parse_generated_instances(self.training_config["traindata_file"]):
+
                 if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
                     try:
                         self.optimizer.zero_grad() # Clear optimizer gradients
@@ -69,27 +84,34 @@ class Trainer:
                         loss.backward()
                         self.optimizer.step()
 
-                        gold_tags = []
+                        # Consolidate predicted and gold labels to 1d array
+                        gold_labels = []
                         for single_batch_tags in batch_tags:
-                            gold_tags.append([self.labels.get_index_from_word(tag) for tag in single_batch_tags])
-                        gold_tags = [j for epoch in gold_tags for j in epoch]
-                        predicted_tags = self.decoder.decode(output)["tag_indexes"]
-                        predicted_tags = [j for epoch in predicted_tags for j in epoch]
-                        precision, recall, f1, _ = precision_recall_fscore_support(gold_tags, predicted_tags, average='weighted')
+                            gold_labels.append([self.labels.get_index_from_word(tag) for tag in single_batch_tags])
+                        gold_labels = [j for epoch in gold_labels for j in epoch]
+                        predicted_labels = self.decoder.decode(output)["tag_indexes"]
+                        predicted_labels = [j for epoch in predicted_labels for j in epoch]
+                        precision, recall, f1, _ = precision_recall_fscore_support(gold_labels, predicted_labels, average='weighted')
 
-                        print("Batch loss: {}".format(loss))
-                        print("Batch Precision: {} | Recall: {} | F1: {}".format(precision, recall, f1))
+                        total_loss += loss
+                        total_f1 += f1
+                        batch_num += 1
+                        print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
+                            batch_num, total_loss / batch_num, total_f1 / batch_num), end="")
 
                     except Exception as e:
-                        print("Exception {}".format(e))
+                        print("Exception: {}\n".format(e))
 
                     batch_tokens, batch_tags, batch_pos = [], [], []
+
                 batch_tokens.append(tokens)
                 batch_tags.append(tags)
                 batch_pos.append(pos)
 
+            # Saving of model
             if epoch % self.training_config["save_on_epochs"] == 0: # Save trained model
-                print("Saving model for epoch {}".format(epoch))
+                print("\nSaving model for epoch {}".format(epoch))
+                print("========================================")
                 torch.save(self.model.state_dict(), Path.joinpath(self.training_config["save_path"], "model_epoch{}".format(epoch)))
 
 
@@ -127,8 +149,12 @@ class Trainer:
             sequence_lengths and sequence mask and tags vector (tag indexes)
         """
         sents_vec, ents_vec, pos_vec, lens_vec, mask = self.preprocessor.pad_batch(instances_dict)
-        return { "sent_vec": sents_vec.long(), "ent_vec": ents_vec.long(), "pos_vec": pos_vec.long(),
-                 "lengths": lens_vec, "mask": mask }
+        return { "sent_vec": sents_vec.long().to(self.device),
+                 "ent_vec": ents_vec.long().to(self.device),
+                 "pos_vec": pos_vec.long().to(self.device),
+                 "lengths": lens_vec,
+                 "mask": mask
+                 }
 
 
     def preprocess_batch(self, tokens_list: List[List], tags_list: List[List], pos_list: List[List]):
