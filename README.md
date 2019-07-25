@@ -7,6 +7,11 @@ _Python version: 3.6_
 Installation of packages:
 `pip install -r requirements.txt`
 
+Downloading of GLOVE Embeddings and extraction of vocab into `model_implementation/Custom`:\
+`python ./model_implementation/download.py`
+
+Training/Prediction on model:\
+`python main.py`
 ***For information on model, please refer to model_implementation README***
 
 ## User Interface for Data Tagging
@@ -61,6 +66,7 @@ https://arxiv.org/pdf/1611.01734.pdf \
 based on Universal Dependencies:\
 https://universaldependencies.org/
 
+***For information on model, please refer to generation README***
 
 ## Processing of Database
 `python ./data/process_db.py` will produce `./data/generated_instances.txt` with tagged tab-separated format:

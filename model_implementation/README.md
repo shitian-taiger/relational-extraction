@@ -2,8 +2,7 @@
 
 ## Setup
 
-Downloading of GLOVE Embeddings to `model_implementation/glove.6B/` and Allen-OIE model tokens, labels and weights to `model_implementation/AllenOIE/`\
-`python download.py`
+For replication of Allen OIE model refer to branch: `base` and set `DOWNLOAD_ALLEN_OIE = True` in `download.py`
 
 ### Configuration
 For customized tokens, embeddings and labels, Ensure folder structure similar to `model_implementation/AllenOIE/`
@@ -63,7 +62,7 @@ For reference: https://github.com/explosion/spaCy/blob/master/spacy/lang/en/tag_
 ## Training and Prediction
 
 Command Line utility not yet implemented.\
-Entry point: `main.py`
+Entry point: `main.py` in root folder
 
 For Prediction purposes, upstream process of NER is required. Currently defaults to spacy NER, for alterations refer to:\
 `model_implementation/model/utils.py` function `_get_entity_idx_map`
