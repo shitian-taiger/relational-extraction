@@ -5,22 +5,29 @@
 For replication of Allen OIE model refer to branch: `base` and set `DOWNLOAD_ALLEN_OIE = True` in `download.py`
 
 ### Configuration
-For customized tokens, embeddings and labels, Ensure folder structure similar to `model_implementation/AllenOIE/`
+For customized tokens, embeddings and labels, Ensure `Custom` folder structure as below:
 ```
---- <Custom Folder Name>
+--- Custom/
     |
-    | - labels
+    | - ne_embedding (Optional)
+    |
+    | - labels/
         |
         | - labels.txt
-        | - tag_layer_bias
-        | - tag_layer_weights
+        | - tag_layer_bias (Optional)
+        | - tag_layer_weights (Optional)
         |
-    | - tokens
+    | - tokens/
         |
         | - token_embedder
         | - tokens.txt
         |
-    | - weights
+    | - pos/
+        |
+        | - pos_embedder (Optional)
+        | - pos.txt
+        |
+    | - weights/ (Optional)
         |
         | - layer<i>_input_bias
         | - layer<i>_input_weight
@@ -30,6 +37,7 @@ For customized tokens, embeddings and labels, Ensure folder structure similar to
         |    .
         |    .
 ```
+- 
 
 ## Model Implementation
 

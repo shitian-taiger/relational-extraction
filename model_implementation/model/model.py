@@ -20,14 +20,17 @@ class REModel(torch.nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self._load_token_embeddings()
+        self._load_embeddings()
         self.bdlstm = self._instantiate_bdlstm()
         self._load_tag_layer()
         self.train = False # Turn this on for training
 
 
-    def _load_token_embeddings(self):
-        # Load weights for token embedding layer
+    def _load_embeddings(self):
+        """
+        Loads embeddings for tokens, named-entity mask vector and pos
+        """
+        # Load weights for token embedding layer (The embedding is mandatory)
         token_embedding_dir = self.config["tokens_dir"]
         token_emb_weights = torch.load(Path.joinpath(token_embedding_dir, "token_embedder"))
         self.token_embedding = torch.nn.Embedding(self.config["num_tokens"], self.config["token_embedding_dim"],
@@ -43,10 +46,11 @@ class REModel(torch.nn.Module):
             self.ne_embedding = torch.nn.Embedding(3, self.config["ne_embedding_dim"])
             if "ne_embedding" in self.config.keys():
                 ne_emb_weights = torch.load(self.config["ne_embeddings"])
-                self.ne_embedding.weight = verb_emb_weights
+                self.ne_embedding.weight = ne_emb_weights
+
 
         # POS tag embedding
-        if "ne_embedding_dim" in self.config:
+        if "pos_embedding_dim" in self.config:
             self.pos_embedding = torch.nn.Embedding(self.config["num_pos"], self.config["pos_embedding_dim"])
             if "pos_embedding" in self.config.keys():
                 pos_emb_weights = torch.load(self.config["pos_embedding"])

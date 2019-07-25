@@ -11,16 +11,18 @@ testdata_file = Path.joinpath(impl_root.parent.resolve(), "data/_generated_insta
 # ALLEN OIE config
 # weights_dir = Path.joinpath(impl_root, "AllenOIE/weights")
 # tokens_dir = Path.joinpath(impl_root, "AllenOIE/tokens")
-labels_dir = Path.joinpath(impl_root, "AllenOIE/labels") # This is the same as the weights dir for now
+# labels_dir = Path.joinpath(impl_root, "AllenOIE/labels") # This is the same as the weights dir for now
 # verb_embedding = Path.joinpath(impl_root, "AllenOIE/verb_embedder")
 
 # Custom config
 weights_dir = None
 tokens_dir = Path.joinpath(impl_root, "Custom/tokens")
-labels_dir = Path.joinpath(impl_root, "Custom/labels")
 pos_dir = Path.joinpath(impl_root, "Custom/pos")
+ne_emb_path = None
+labels_dir = Path.joinpath(impl_root, "Custom/labels")
 
-
+# Ensure tokens_dir, pos_dir and labels_dir are present considering they all required for vocabulary generation
+# weights_dir and ne_dir can be `None`
 model_config = {
     "input_size": 200,
     "hidden_size": 300,

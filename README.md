@@ -12,6 +12,7 @@ Downloading of GLOVE Embeddings and extraction of vocab into `model_implementati
 
 Training/Prediction on model:\
 `python main.py`
+
 ***For information on model, please refer to model_implementation README***
 
 ## User Interface for Data Tagging
@@ -20,7 +21,7 @@ Training/Prediction on model:\
 Dependency Installations:\
 `npm install` within `./frontend-app`\
 Start server:\
-`npm start` within `./frontend-app`\
+`npm start` within `./frontend-app`
 
 ***Refer to front-end README for more info***
 
@@ -72,9 +73,9 @@ https://universaldependencies.org/
 `python ./data/process_db.py` will produce `./data/generated_instances.txt` with tagged tab-separated format:
 
 ```
-| word_id | word   | label                                             |
-|---------|--------|---------------------------------------------------|
-| INTEGER | STRING | (B/I - ENT1) or (B/I - REL) or (B/I - ENT2) or O) |
+| word_id | word   | label                                             | pos                    |
+|---------|--------|---------------------------------------------------|------------------------|
+| INTEGER | STRING | (B/I - ENT1) or (B/I - REL) or (B/I - ENT2) or O) | Spacy POS Tag for word |
 ```
 
 ## BRAT Preprocessing
