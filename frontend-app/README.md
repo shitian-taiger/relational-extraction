@@ -9,4 +9,4 @@
 **Ensure backend server is running**
 
 ### UI Interface
-![Image of Front End UI](https://raw.githubusercontent.com/shitian-taiger/relational-extraction/remodel-implementation/images/ui.png)
+![Image of Front End UI](https://raw.githubusercontent.com/shitian-taiger/relational-extraction/master/images/ui.png)

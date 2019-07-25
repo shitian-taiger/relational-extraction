@@ -1,4 +1,6 @@
-# Open Relational Extraction Model
+# Open Relational Extraction
+
+![Relational Extraction Intro](https://raw.githubusercontent.com/shitian-taiger/relational-extraction/master/images/re_info.png)
 
 ## Setup
 
