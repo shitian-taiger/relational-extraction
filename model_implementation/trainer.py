@@ -1,7 +1,8 @@
 import re
 import torch
-from torch.nn.utils.rnn import pack_padded_sequence
 from pathlib import Path
+from sklearn.metrics import precision_recall_fscore_support
+from torch.nn.utils.rnn import pack_padded_sequence
 from typing import Tuple, Dict, List
 from model_implementation.model.decoder import Decoder
 from model_implementation.model.model import REModel
@@ -26,6 +27,7 @@ class Trainer:
 
             training_config: Training Configurations including batch_size etc
         """
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.vocab = Vocabulary(model_config["tokens_dir"])
         model_config["num_tokens"] = self.vocab.vocab_len
@@ -35,7 +37,7 @@ class Trainer:
         model_config["num_pos"] = self.pos.pos_len
         self.preprocessor = Preprocessor(self.vocab, self.labels, self.pos)
 
-        self.model = REModel(model_config)
+        self.model = REModel(model_config).to(self.device)
         self.decoder = Decoder(self.vocab, self.labels)
 
         if training_config:
@@ -62,18 +64,26 @@ class Trainer:
                 if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
                     self.optimizer.zero_grad() # Clear optimizer gradients
 
-                    try:
-                        model_input = self.preprocess_batch(batch_tokens, batch_tags, batch_pos)
-                        output = self.model(model_input)
+                    model_input = self.preprocess_batch(batch_tokens, batch_tags, batch_pos)
+                    output = self.model(model_input)
 
-                        output_tags = self.decoder.decode(output)["tags"]
-                        loss = output["loss"]
-                        loss.backward()
-                        self.optimizer.step()
+                    loss = output["loss"]
+                    loss.backward()
+                    self.optimizer.step()
 
-                        print("Batch loss: {}".format(loss))
-                    except:
-                        pass
+                    gold_tags = []
+                    for single_batch_tags in batch_tags:
+                        gold_tags.append([self.labels.get_index_from_word(tag) for tag in single_batch_tags])
+                    gold_tags = [j for i in gold_tags for j in i]
+                    predicted_tags = self.decoder.decode(output)["tag_indexes"]
+                    predicted_tags = [j for i in predicted_tags for j in i]
+                    precision, recall, f1, _ = precision_recall_fscore_support(gold_tags, predicted_tags, average='weighted')
+
+                    print("Batch loss: {}".format(loss))
+                    print("Precision: {} | Recall: {} | F1: {}".format(precision, recall, f1))
+
+                    # except Exception as e:
+                    #     print("Exception {}".format(e))
 
                     batch_tokens, batch_tags, batch_pos = [], [], []
                 batch_tokens.append(tokens)
@@ -101,6 +111,50 @@ class Trainer:
             "vectorized_instances": vectorized_sentence
             })
         return rel_tuples
+
+
+    def preprocess_batch_tagless(self, instances_dict):
+        """
+        Preprocessing for sentences, purely for prediction purposes, tags not required
+        Arguments:
+            batch_instances: List of output of vectorize_token_tags -
+                             (Dict of token_vector, entity_vector, pos_vector, tags_vector [Optional])
+        Returns:
+            Dictionary of sentence vector (token indexes), entity vector,
+            sequence_lengths and sequence mask and tags vector (tag indexes)
+        """
+        sents_vec, ents_vec, pos_vec, lens_vec, mask = self.preprocessor.pad_batch(instances_dict)
+        return { "sent_vec": sents_vec.long(), "ent_vec": ents_vec.long(), "pos_vec": pos_vec.long(),
+                 "lengths": lens_vec, "mask": mask }
+
+
+    def preprocess_batch(self, tokens_list: List[List], tags_list: List[List], pos_list: List[List]):
+        """
+        Preprocessing for tokens and tags for training
+        Arguments:
+            tokens_list: List of (List of string words)
+            tags_list: List of (List of string tags)
+            pos_list: List of (List of string word POS)
+        Returns:
+            Dictionary of sentence vector (token indexes), entity vector,
+            sequence_lengths and sequence mask and tags vector (tag indexes)
+        """
+        assert(len(tokens_list) == len(tags_list))
+        vectorized_list: List[Dict] = []
+        for i, tokens in enumerate(tokens_list):
+            tags = tags_list[i]
+            pos = pos_list[i]
+            vectorized: List[Dict] = self.preprocessor.vectorize_token_tags(tokens, tags, pos)
+            vectorized_list += vectorized
+        sents_vec, ents_vec, pos_vec, lens_vec, mask, tags_vec = self.preprocessor.pad_batch(vectorized_list)
+        return { "sent_vec": (sents_vec.long()).to(self.device),
+                 "ent_vec": ents_vec.long().to(self.device),
+                 "pos_vec": pos_vec.long().to(self.device),
+                 "lengths": lens_vec,
+                 "mask": mask,
+                 "tags_vec": tags_vec.long().to(self.device)
+                 }
+
 
 
     def _parse_tags(self, output_dict: Dict):
@@ -144,68 +198,6 @@ class Trainer:
         return(tuples)
 
 
-    def _parse_tags_OIE(self, output_dict: Dict):
-        """
-        TODO (Deprecate) Parsing for OIE output
-        Given a vectorized sentence (vocabulary word indexes) and output tags for the sentence,
-        generate tuples of relations
-        Arguments:
-            Dictionary containing "sent_vec": `sentence vector` and "tags_list": `list of tags`
-            Note that tags is a nested list since multiple predicates can be present in the sentence
-        Returns:
-            tuples: List of < arg, rel, arg > tuples
-        """
-        tags_list, sentence_vector = output_dict["tags_list"], output_dict["sent_vec"]
-        # Double check token and tag lengths
-        for tags in tags_list:
-            assert(len(tags) == len(sentence_vector))
-
-        tuples: List[Tuple] = []
-        for tags in tags_list:
-            tags_iter = iter(tags)
-            # We store the word_index together with array index for retrieval of the original word in
-            # the case of UNK tags
-            pre_rel_args, rel, post_rel_args = [], [], []
-            rel_found = False
-            curr_index = 0
-            for tag in tags_iter:
-                # Beginning of Verb or verbial modifier, append all tags till we hit `B-V`
-                if tag == "B-V" or tag == "B-BV":
-                    rel.append((sentence_vector[curr_index], curr_index))
-                    curr_index += 1 if (curr_index < len(tags) - 1) else 0
-                    next_tag = tags[curr_index]
-                    while (not tag == "B-V" and not next_tag == "B-V") and curr_index < (len(tags) - 1):
-                        next(tags_iter)
-                        rel.append((sentence_vector[curr_index], curr_index))
-                        curr_index = curr_index + 1 if curr_index < len(tags) else curr_index
-                        next_tag = tags[curr_index]
-                    rel_found = True
-                # Beginning of ARG, append until next tag is not an I-tag
-                elif re.search("B-", tag):
-                    arg: List = [(sentence_vector[curr_index], curr_index)]
-                    curr_index += 1 if (curr_index < len(tags) - 1) else 0
-                    next_tag = tags[curr_index]
-                    while re.search("I-", next_tag) and curr_index < (len(tags) - 1):
-                        next(tags_iter)
-                        arg.append((sentence_vector[curr_index], curr_index))
-                        curr_index += 1
-                        next_tag = tags[curr_index]
-                    if rel_found:
-                        post_rel_args.append(arg)
-                    else:
-                        pre_rel_args.append(arg)
-                else:
-                    curr_index += 1
-
-            # Translate all tupled word indexes phrases
-            for pre_arg in pre_rel_args:
-                for post_arg in post_rel_args:
-                    tuples.append((self._get_phrase(pre_arg, output_dict["tokens"]),
-                                   self._get_phrase(rel, output_dict["tokens"]),
-                                   self._get_phrase(post_arg, output_dict["tokens"])))
-        return tuples
-
-
     def _get_phrase(self, token_indexes: List, sentence_tokens: List):
         # Given list of token indexes, map indexes to dictionary and join them according to punctuation
         phrase = ""
@@ -222,42 +214,3 @@ class Trainer:
             else:
                 phrase = " ".join([phrase, word]) if phrase else word
         return phrase
-
-
-    def preprocess_batch_tagless(self, instances_dict):
-        """
-        Preprocessing for sentences, purely for prediction purposes, tags not required
-        Arguments:
-            batch_instances: List of output of vectorize_token_tags -
-                             (Dict of token_vector, entity_vector, pos_vector, tags_vector [Optional])
-        Returns:
-            Dictionary of sentence vector (token indexes), entity vector,
-            sequence_lengths and sequence mask and tags vector (tag indexes)
-        """
-        sents_vec, ents_vec, pos_vec, lens_vec, mask = self.preprocessor.pad_batch(instances_dict)
-        return { "sent_vec": sents_vec.long(), "ent_vec": ents_vec.long(), "pos_vec": pos_vec.long(),
-                 "lengths": lens_vec, "mask": mask }
-
-
-    def preprocess_batch(self, tokens_list: List[List], tags_list: List[List], pos_list: List[List]):
-        """
-        Preprocessing for tokens and tags for training
-        Arguments:
-            tokens_list: List of (List of string words)
-            tags_list: List of (List of string tags)
-            pos_list: List of (List of string word POS)
-        Returns:
-            Dictionary of sentence vector (token indexes), entity vector,
-            sequence_lengths and sequence mask and tags vector (tag indexes)
-        """
-        assert(len(tokens_list) == len(tags_list))
-        vectorized_list: List[Dict] = []
-        for i, tokens in enumerate(tokens_list):
-            tags = tags_list[i]
-            pos = pos_list[i]
-            vectorized: List[Dict] = self.preprocessor.vectorize_token_tags(tokens, tags, pos)
-            vectorized_list += vectorized
-        sents_vec, ents_vec, pos_vec, lens_vec, mask, tags_vec = self.preprocessor.pad_batch(vectorized_list)
-        return { "sent_vec": sents_vec.long(), "ent_vec": ents_vec.long(), "pos_vec": pos_vec.long(),
-                "lengths": lens_vec, "mask": mask, "tags_vec": tags_vec.long() }
-

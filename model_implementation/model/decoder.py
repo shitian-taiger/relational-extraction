@@ -23,12 +23,15 @@ class Decoder:
         else:
             predictions_list = [all_predictions]
         all_tags = []
+        all_maxl_seq = []
         transition_matrix = self.get_viterbi_pairwise_potentials()
         for predictions, length in zip(predictions_list, sequence_lengths):
             max_likelihood_sequence, _ = self.viterbi_decode(predictions[:length], transition_matrix)
             tags = [self.labels.get_word_from_index(x) for x in max_likelihood_sequence]
             all_tags.append(tags)
+            all_maxl_seq.append(max_likelihood_sequence)
         output_dict['tags'] = all_tags
+        output_dict['tag_indexes'] = all_maxl_seq
         return output_dict
 
 
