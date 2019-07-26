@@ -27,11 +27,21 @@ class Trainer:
                 -- token_embedding_dim
                 -- ne_embedding_dim
                 -- pos_embedding_dim
+                -- predict_path: Applicable only to prediction, path to trained model
 
             * Ensure token_embedding_dim + ne_embedding_dim + pos_embedding_dim = input_size
 
             training_config: Training Configurations including epochs, batch_size etc
+                -- epochs
+                -- batch_size
+                -- learning_rate
+                -- traindata_file: Path to file containing training data
+                -- testdata_file: Path to file containing test data
+                -- save_on_epochs: Every x number of epochs to save on
+                -- save_path: Directory of model save folder
+
         """
+
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.vocab = Vocabulary(model_config["tokens_dir"])
@@ -45,6 +55,9 @@ class Trainer:
         self.model = REModel(model_config).to(self.device)
         self.decoder = Decoder(self.vocab, self.labels)
 
+        if model_config["predict_path"]:
+            self.predict_path = model_config["predict_path"]
+
         if training_config:
             self.training_config: Dict = training_config
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=training_config["learning_rate"])
@@ -56,8 +69,8 @@ class Trainer:
         if not self.training_config:
             raise("No training configuration given")
 
-        epochs = self.training_config["epochs"]
         batch_size = self.training_config["batch_size"]
+        epochs = self.training_config["epochs"]
 
         print("=================================================")
         print("Total Epochs: {}".format(self.training_config["epochs"]))
@@ -69,46 +82,46 @@ class Trainer:
         # TODO Shuffling of data and Validation Set (Currently unable to process entire file all at once)
         for epoch in range(1, epochs + 1):
             print("Epoch {}\n--------------------------------------------------\n".format(epoch))
-            batch_tokens, batch_tags, batch_pos = [], [], []
             batch_num, total_loss, total_f1 = 0, 0, 0
-            for tokens, tags, pos in parse_generated_instances(self.training_config["traindata_file"]):
+            for batch_tokens, batch_tags, batch_pos in self._get_next_batch(self.training_config["traindata_file"]):
+                try:
+                    self.optimizer.zero_grad() # Clear optimizer gradients
+                    model_input = self._preprocess_batch(batch_tokens, batch_tags, batch_pos)
+                    output = self.model(model_input)
+                    loss = output["loss"]
+                    loss.backward()
+                    self.optimizer.step()
+                    # Consolidate predicted and gold labels to 1d array
+                    predicted_labels = self.decoder.decode(output)["tag_indexes"]
+                    precision, recall, f1, _ = self._get_batch_stats(batch_tags, predicted_labels)
+                    total_loss += loss
+                    total_f1 += f1
+                    batch_num += 1
+                    print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
+                        batch_num, total_loss / batch_num, total_f1 / batch_num), end="")
 
-                if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
-                    try:
-                        self.optimizer.zero_grad() # Clear optimizer gradients
+                except Exception as e:
+                    print("Exception: {}\n".format(e))
 
-                        model_input = self.preprocess_batch(batch_tokens, batch_tags, batch_pos)
-                        output = self.model(model_input)
+            print("================= Test ==========================")
+            for batch_tokens, batch_tags, batch_pos in self._get_next_batch(self.training_config["testdata_file"]):
+                test_total_loss, test_total_f1 = 0, 0, 0
+                try:
+                    model_input = self._preprocess_batch(batch_tokens, batch_tags, batch_pos)
+                    output = self.model(model_input)
+                    loss = output["loss"]
+                    predicted_labels = self.decoder.decode(output)["tag_indexes"]
+                    precision, recall, f1, _ = self._get_batch_stats(batch_tags, predicted_labels)
+                    test_total_loss += loss
+                    test_total_f1 += f1
+                    print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
+                        batch_num, test_total_loss / batch_num, test_total_f1 / batch_num), end="")
 
-                        loss = output["loss"]
-                        loss.backward()
-                        self.optimizer.step()
-
-                        # Consolidate predicted and gold labels to 1d array
-                        gold_labels = []
-                        for single_batch_tags in batch_tags:
-                            gold_labels.append([self.labels.get_index_from_word(tag) for tag in single_batch_tags])
-                        gold_labels = [j for epoch in gold_labels for j in epoch]
-                        predicted_labels = self.decoder.decode(output)["tag_indexes"]
-                        predicted_labels = [j for epoch in predicted_labels for j in epoch]
-                        precision, recall, f1, _ = precision_recall_fscore_support(gold_labels, predicted_labels, average='weighted')
-
-                        total_loss += loss
-                        total_f1 += f1
-                        batch_num += 1
-                        print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
-                            batch_num, total_loss / batch_num, total_f1 / batch_num), end="")
-
-                    except Exception as e:
-                        print("Exception: {}\n".format(e))
-
-                    batch_tokens, batch_tags, batch_pos = [], [], []
-
-                batch_tokens.append(tokens)
-                batch_tags.append(tags)
-                batch_pos.append(pos)
+                except Exception as e:
+                    print("Exception: {}\n".format(e))
 
             # Saving of model
+            # TODO: Early stopping
             if epoch % self.training_config["save_on_epochs"] == 0: # Save trained model
                 print("\nSaving model for epoch {}".format(epoch))
                 print("========================================")
@@ -120,13 +133,16 @@ class Trainer:
         """
         Prediction for sentence, not applicable for training
         """
+        if not self.predict_path:
+            raise Exception("Saved model path not specified")
+
         self.model.train = False
-        saved_model_path = Path.joinpath(Path(__file__).parent, 'saved/model_epoch90')
-        self.model.load_state_dict(torch.load(saved_model_path))
+        saved_model_path = self.predict_path
+        self.model.load_state_dict(torch.load(saved_model_path, map_location='cpu')) # Assume training done on GPU
         vectorized_sentence = self.preprocessor.vectorize_sentence(sentence)
         if len(vectorized_sentence) == 0: # No named entities found, shortcircuit
             return []
-        model_input = self.preprocess_batch_tagless(vectorized_sentence)
+        model_input = self._preprocess_batch_tagless(vectorized_sentence)
         output = self.model(model_input)
         output_tags = self.decoder.decode(output)["tags"]
         # Tuples of token indexes
@@ -138,7 +154,7 @@ class Trainer:
         return rel_tuples
 
 
-    def preprocess_batch_tagless(self, instances_dict):
+    def _preprocess_batch_tagless(self, instances_dict):
         """
         Preprocessing for sentences, purely for prediction purposes, tags not required
         Arguments:
@@ -157,7 +173,7 @@ class Trainer:
                  }
 
 
-    def preprocess_batch(self, tokens_list: List[List], tags_list: List[List], pos_list: List[List]):
+    def _preprocess_batch(self, tokens_list: List[List], tags_list: List[List], pos_list: List[List]):
         """
         Preprocessing for tokens and tags for training
         Arguments:
@@ -184,6 +200,39 @@ class Trainer:
                  "tags_vec": tags_vec.long().to(self.device)
                  }
 
+
+    def _get_next_batch(self, data_file: str):
+        """
+        Retrieves instances from data file and batches according to specified batch size
+        """
+        batch_size = self.training_config["batch_size"]
+        batch_tokens, batch_tags, batch_pos = [], [], []
+        for tokens, tags, pos in parse_generated_instances(self.training_config["traindata_file"]):
+            if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
+                yield batch_tokens, batch_tags, batch_pos
+                batch_tokens, batch_tags, batch_pos = [], [], []
+            batch_tokens.append(tokens)
+            batch_tags.append(tags)
+            batch_pos.append(pos)
+
+
+    def _get_batch_stats(self, batch_labels: List, predicted_labels: List):
+        """
+        Gets precision, recall, f1 score given tags of batch and predicted_labels
+        Arguments:
+            batch_labels: 1d List of label indexes
+            predicted_labels: 1d List of label indexes
+        Returns:
+            (Precision, Recall, F1, Support[Not applicable]) : List[int]
+        """
+        assert(len(batch_labels) == len(predicted_labels))
+
+        gold_labels = []
+        for single_batch_tags in batch_labels:
+            gold_labels.append([self.labels.get_index_from_word(tag) for tag in single_batch_tags])
+        gold_labels = [j for epoch in gold_labels for j in epoch]
+        predicted_labels = [j for epoch in predicted_labels for j in epoch]
+        return precision_recall_fscore_support(gold_labels, predicted_labels, average='weighted')
 
 
     def _parse_tags(self, output_dict: Dict):

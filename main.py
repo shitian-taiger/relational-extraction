@@ -6,7 +6,7 @@ impl_root = Path.joinpath(Path(__file__).parent.resolve(), 'model_implementation
 
 # Data
 traindata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated_instances.txt")
-testdata_file = Path.joinpath(impl_root.parent.resolve(), "data/_generated_instances.txt")
+testdata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated_instances_test.txt")
 
 # ALLEN OIE config
 # weights_dir = Path.joinpath(impl_root, "AllenOIE/weights")
@@ -20,6 +20,7 @@ tokens_dir = Path.joinpath(impl_root, "Custom/tokens")
 pos_dir = Path.joinpath(impl_root, "Custom/pos")
 ne_emb_path = None
 labels_dir = Path.joinpath(impl_root, "Custom/labels")
+predict_path = Path.joinpath(impl_root, "saved/model_epoch5")
 
 # Ensure tokens_dir, pos_dir and labels_dir are present considering they all required for vocabulary generation
 # weights_dir and ne_dir can be `None`
@@ -29,13 +30,14 @@ model_config = {
     "highway": True,
     "dropout": 0.2, # Irrelevant for now
     "layers": 8,
-    "weights_dir": weights_dir, # Directory containing LSTM weights
-    "tokens_dir": tokens_dir, # Directory containing tokens.txt and embeddings
-    "pos_dir": pos_dir, # Directory containing pos.txt and corresponding embeddings
-    "labels_dir": labels_dir, # Directory containing labels.txt and corresponding weights and bias
+    "weights_dir": weights_dir,
+    "tokens_dir": tokens_dir,
+    "pos_dir": pos_dir,
+    "labels_dir": labels_dir,
     "token_embedding_dim": 100,
     "ne_embedding_dim": 50,
     "pos_embedding_dim": 50,
+    "predict_path": predict_path
 }
 
 save_path = Path.joinpath(impl_root, "saved")
@@ -62,7 +64,11 @@ sentences = [
     "Bob is an associate of the London Society of Murderers",
     "Bob got his master's degree from the University Of Chainsaws.",
     "Bob got his Phd from the University Of Chanad.",
-    "Bob is currently a student in Xaunity University."
+    "Bob is currently a student in Xaunity University.",
+    "This $1 stamp features a screen painting by Japanese painter Houitsu Sakai..",
+    "As part of the island’s upgrading works, a $100,000 interactive Sounds of Siloso exhibit was added to the Fort’s tunnel system in 1987..",
+    "This $2 Singapore Biennale stamp was issued by Singapore Post on 13 September 2006..",
+    "Postcard bearing King George V 1-cent green stamp, used in Federated Malay States (FMS) in 1916."
              ]
 
 if __name__ == "__main__":
