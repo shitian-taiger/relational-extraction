@@ -46,6 +46,37 @@ def process_db(instance_file):
     iob_file.close()
 
 
+def process_nhb(instance_file):
+
+    df = pd.read_csv('../data/ExtractedRelations.csv', sep=',')
+
+    # Currently processed till 87000
+    df = df[200000:] # Chinese characters
+    num_tagged = 0
+    with open(instances_file, "a+") as iob_file:
+        for index, row in df.iterrows():
+
+            if num_tagged % 1000 == 0:
+                print("{} instances saved".format(num_tagged))
+
+            sentence = row["Sentence"]
+            ent1 = row["Entity 1"]
+            rel = row["Relation"]
+            ent2 = row["Entity 2"]
+
+            ent1_span = row["Entity 1 Span"]
+            rel_span = row["Relation Span"]
+            ent2_span = row["Entity 2 Span"]
+            instance_tuple = (ent1, rel, ent2)
+
+            tagged = instance_to_iob(sentence, instance_tuple)
+            if not tagged == "":
+                iob_file.write(tagged)
+                num_tagged += 1
+
+    print("Total: {}".format(num_tagged))
+
+
 def tag_phrase(phrase: str, tag: str):
     """
     Given word(s), tokenizes and tags correspondingly
@@ -117,5 +148,9 @@ def instance_to_iob(sentence: str, instance: Tuple):
 
 
 if __name__ == "__main__":
-    file_name = Path.joinpath(Path(__file__).parent, "generated_instances.txt")
-    process_db(file_name)
+    instances_file = Path.joinpath(Path(__file__).parent, "generated_instances_validation.txt")
+    # process_nhb(instances_file)
+    # process_db(instances_file)
+
+
+

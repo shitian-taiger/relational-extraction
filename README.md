@@ -57,6 +57,7 @@ NegativeInstance
 |---------|-----|---------|
 ```
 
+For generation of data after tagging, use `process_db()` in `data/process_data.py`
 
 ## Data Generation Helper
 
