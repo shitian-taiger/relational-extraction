@@ -94,7 +94,7 @@ class Trainer:
                     # Consolidate predicted and gold labels to 1d array
                     predicted_labels = self.decoder.decode(output)["tag_indexes"]
                     precision, recall, f1, _ = self._get_batch_stats(batch_tags, predicted_labels)
-                    total_loss += loss
+                    total_loss += loss.item()
                     total_f1 += f1
                     batch_num += 1
                     print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
@@ -112,7 +112,7 @@ class Trainer:
                     loss = output["loss"]
                     predicted_labels = self.decoder.decode(output)["tag_indexes"]
                     precision, recall, f1, _ = self._get_batch_stats(batch_tags, predicted_labels)
-                    test_total_loss += loss
+                    test_total_loss += loss.item()
                     test_total_f1 += f1
                     print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
                         batch_num, test_total_loss / batch_num, test_total_f1 / batch_num), end="")
