@@ -2,6 +2,8 @@
 
 ![Relational Extraction Intro](https://raw.githubusercontent.com/shitian-taiger/relational-extraction/master/images/re_info.png)
 
+_For more information on please refer to the FAQ section on the front-end UI_
+
 ## Setup
 
 _Python version: 3.6_
@@ -57,7 +59,7 @@ NegativeInstance
 |---------|-----|---------|
 ```
 
-For generation of data after tagging, use `process_db()` in `data/process_data.py`
+For generation of data after tagging, run `process_db()` in `data/process_data.py`
 
 ## Data Generation Helper
 
@@ -73,7 +75,8 @@ https://universaldependencies.org/
 ***For information on model, please refer to generation README***
 
 ## Processing of Database
-`python ./data/process_db.py` will produce `./data/generated_instances.txt` with tagged tab-separated format:
+
+The output data format post-processing of data is of:
 
 ```
 | word_id | word   | label                                             | pos                    |

@@ -1,4 +1,5 @@
 import re
+import time
 import torch
 from pathlib import Path
 from sklearn.metrics import precision_recall_fscore_support
@@ -7,7 +8,7 @@ from typing import Tuple, Dict, List
 from model_implementation.model.decoder import Decoder
 from model_implementation.model.model import REModel
 from model_implementation.model.utils import *
-from model_implementation.data_utils import parse_generated_instances
+from model_implementation.data_utils import get_next_batch
 
 class Trainer:
 
@@ -41,7 +42,6 @@ class Trainer:
                 -- save_path: Directory of model save folder
 
         """
-
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.vocab = Vocabulary(model_config["tokens_dir"])
@@ -82,8 +82,11 @@ class Trainer:
         # TODO Shuffling of data and Validation Set (Currently unable to process entire file all at once)
         for epoch in range(1, epochs + 1):
             print("Epoch {}\n--------------------------------------------------\n".format(epoch))
+
+            start_time = time.time()
+
             batch_num, total_loss, total_f1 = 0, 0, 0
-            for batch_tokens, batch_tags, batch_pos in self._get_next_batch(self.training_config["traindata_file"]):
+            for batch_tokens, batch_tags, batch_pos in get_next_batch(batch_size, self.training_config["traindata_file"]):
                 try:
                     self.optimizer.zero_grad() # Clear optimizer gradients
                     model_input = self._preprocess_batch(batch_tokens, batch_tags, batch_pos)
@@ -97,15 +100,23 @@ class Trainer:
                     total_loss += loss.item()
                     total_f1 += f1
                     batch_num += 1
+
+                    elapsed_time = time.time() - start_time
+
                     print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
                         batch_num, total_loss / batch_num, total_f1 / batch_num), end="")
 
                 except Exception as e:
-                    print("Exception: {}\n".format(e))
+                    print("Exception: {}".format(e))
+
+            print("Total num batches: {} | Loss (Cumulative): {} | F1 (Cumulative): {}".format(
+                batch_num, total_loss / batch_num, total_f1 / batch_num))
+            elapsed_time = time.time() - start_time
+            time.strftime("\nTime taken for epoch: %H:%M:%S", time.gmtime(elapsed_time))
 
             print("================= Test ==========================")
-            for batch_tokens, batch_tags, batch_pos in self._get_next_batch(self.training_config["testdata_file"]):
-                test_total_loss, test_total_f1 = 0, 0, 0
+            for batch_tokens, batch_tags, batch_pos in get_next_batch(self.training_config["testdata_file"]):
+                test_total_loss, test_total_f1 = 0, 0
                 try:
                     model_input = self._preprocess_batch(batch_tokens, batch_tags, batch_pos)
                     output = self.model(model_input)
@@ -120,13 +131,15 @@ class Trainer:
                 except Exception as e:
                     print("Exception: {}\n".format(e))
 
+            print("Loss (Cumulative): {} | F1 (Cumulative): {}".format(
+                batch_num, test_total_loss / batch_num, test_total_f1 / batch_num))
+
             # Saving of model
             # TODO: Early stopping
             if epoch % self.training_config["save_on_epochs"] == 0: # Save trained model
                 print("\nSaving model for epoch {}".format(epoch))
                 print("========================================")
                 torch.save(self.model.state_dict(), Path.joinpath(self.training_config["save_path"], "model_epoch{}".format(epoch)))
-
 
 
     def predict(self, sentence: str):
@@ -169,7 +182,7 @@ class Trainer:
                  "ent_vec": ents_vec.long().to(self.device),
                  "pos_vec": pos_vec.long().to(self.device),
                  "lengths": lens_vec,
-                 "mask": mask
+                 "mask": mask.long().to(self.device)
                  }
 
 
@@ -196,24 +209,9 @@ class Trainer:
                  "ent_vec": ents_vec.long().to(self.device),
                  "pos_vec": pos_vec.long().to(self.device),
                  "lengths": lens_vec,
-                 "mask": mask,
+                 "mask": mask.long().to(self.device),
                  "tags_vec": tags_vec.long().to(self.device)
                  }
-
-
-    def _get_next_batch(self, data_file: str):
-        """
-        Retrieves instances from data file and batches according to specified batch size
-        """
-        batch_size = self.training_config["batch_size"]
-        batch_tokens, batch_tags, batch_pos = [], [], []
-        for tokens, tags, pos in parse_generated_instances(self.training_config["traindata_file"]):
-            if len(batch_tokens) == batch_size and len(batch_tags) == batch_size:
-                yield batch_tokens, batch_tags, batch_pos
-                batch_tokens, batch_tags, batch_pos = [], [], []
-            batch_tokens.append(tokens)
-            batch_tags.append(tags)
-            batch_pos.append(pos)
 
 
     def _get_batch_stats(self, batch_labels: List, predicted_labels: List):
