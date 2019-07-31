@@ -107,15 +107,15 @@ class Trainer:
                         batch_num, total_loss / batch_num, total_f1 / batch_num), end="")
 
                 except Exception as e:
-                    print("Exception: {}".format(e))
+                    print("Exception: {}\n".format(e))
 
             print("Total num batches: {} | Loss (Cumulative): {} | F1 (Cumulative): {}".format(
                 batch_num, total_loss / batch_num, total_f1 / batch_num))
             elapsed_time = time.time() - start_time
-            time.strftime("\nTime taken for epoch: %H:%M:%S", time.gmtime(elapsed_time))
+            print(time.strftime("\nTime taken for epoch: %H:%M:%S", time.gmtime(elapsed_time)))
 
             print("================= Test ==========================")
-            for batch_tokens, batch_tags, batch_pos in get_next_batch(self.training_config["testdata_file"]):
+            for batch_tokens, batch_tags, batch_pos in get_next_batch(batch_size, self.training_config["testdata_file"]):
                 test_total_loss, test_total_f1 = 0, 0
                 try:
                     model_input = self._preprocess_batch(batch_tokens, batch_tags, batch_pos)
@@ -151,7 +151,7 @@ class Trainer:
 
         self.model.train = False
         saved_model_path = self.predict_path
-        self.model.load_state_dict(torch.load(saved_model_path, map_location='cpu')) # Assume training done on GPU
+        self.model.load_state_dict(torch.load(saved_model_path, map_location=self.device))
         vectorized_sentence = self.preprocessor.vectorize_sentence(sentence)
         if len(vectorized_sentence) == 0: # No named entities found, shortcircuit
             return []

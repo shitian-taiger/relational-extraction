@@ -189,7 +189,7 @@ class REModel(torch.nn.Module):
 
         negative_log_likelihood_flat = -torch.gather(log_probs_flat, dim=1, index=tags_flat)
         negative_log_likelihood = negative_log_likelihood_flat.view(*tags.size())
-        negative_log_likelihood = negative_log_likelihood.cpu() * mask.float()
+        negative_log_likelihood = negative_log_likelihood * mask.float()
 
         per_batch_loss = negative_log_likelihood.sum(1) / (mask.sum(1).float() + 1e-13)
         num_non_empty_sequences = ((mask.sum(1) > 0).float().sum() + 1e-13)
