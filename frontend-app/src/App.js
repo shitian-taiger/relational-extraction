@@ -43,7 +43,7 @@ class Base extends React.Component {
       DBINFO: "Remember to clear browser cache if recent downloads of DB are not updating",
       sentence: "",
       predictedResults: {},
-      oieResults: [],
+      modelResults: [],
       nerOieResults: [],
       dpResults: [],
       resultsPresent: false,
@@ -59,7 +59,7 @@ class Base extends React.Component {
   }
 
   // Retrieve sentence and predicted results from Predictor
-  // predictionResults of format: {dp / oie / ner_oie_prediction: }
+  // predictionResults of format: {dp / model / ner_oie_prediction: }
   resultReceived = (sentence, predictionResults) => {
     this.setState({
       resultsPresent: true,
@@ -68,7 +68,7 @@ class Base extends React.Component {
     this.setState({
       sentence: sentence,
       predictedResults: predictionResults,
-      oieResults: predictionResults.oie_prediction,
+      modelResults: predictionResults.model_prediction,
       nerOieResults: predictionResults.ner_oie_prediction,
       dpResults: predictionResults.dp_prediction
     });
@@ -91,8 +91,8 @@ class Base extends React.Component {
   // Helper for mapping vArr and instances
   getInstances(validationArr, validity) {
     let instances = [];
-    for (let idx in this.state.oieResults) {
-      if (validationArr.oie[idx] === validity) instances.push(this.state.oieResults[idx]);
+    for (let idx in this.state.modelResults) {
+      if (validationArr.model[idx] === validity) instances.push(this.state.modelResults[idx]);
     }
     for (let idx in this.state.dpResults) {
       if (validationArr.dp[idx] === validity) instances.push(this.state.dpResults[idx]);
@@ -124,7 +124,7 @@ class Base extends React.Component {
     this.setState({
       sentence: "",
       predictedResults: {},
-      oieResults: [],
+      modelResults: [],
       nerOieResults: [],
       dpResults: [],
       resultsPresent: false,

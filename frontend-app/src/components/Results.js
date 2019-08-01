@@ -12,7 +12,7 @@ let initialState = {
   dPLines: [],
   oieNerResLines: [],
   // Bitwise validity for user input
-  validity: {oie: [], dp: [], nerOie: []},
+  validity: {model: [], dp: [], nerOie: []},
   userInstances: [],
   sentence: "",
   highlightedArgs: {}
@@ -45,11 +45,11 @@ class Results extends React.Component {
       this.setState(initialState);
     } else {
       this.setState({
-        oieResults: results.oie_prediction,
+        oieResults: results.model_prediction,
         dpResults: results.dp_prediction,
         nerOieResults: results.ner_oie_prediction,
         validity: {
-          oie: results.oie_prediction.map(x => 0),
+          model: results.model_prediction.map(x => 0),
           dp: results.dp_prediction.map(x => 0),
           nerOie: results.ner_oie_prediction.map(x => 0)
         },
@@ -60,16 +60,16 @@ class Results extends React.Component {
       // We pass in results for updateInstances since state change for setState above doesn't
       // kick in until end of function call
       this.updateInstances(
-        results.oie_prediction,
+        results.model_prediction,
         results.dp_prediction,
         results.ner_oie_prediction,
       );
     }
   }
 
-  updateInstances(oie, dp, ner_oie) {
+  updateInstances(model, dp, ner_oie) {
     this.setState({
-      oieResLines : this.getResArray("OIE", oie),
+      oieResLines : this.getResArray("MODEL", model),
       dPLines: this.getResArray("DP", dp),
       oieNerResLines: this.getResArray("NER-OIE", ner_oie),
     });
@@ -99,8 +99,8 @@ class Results extends React.Component {
 
   // Helpers for getting corresponding arrays for prediction types
   getValidityArr(pType) {
-    if (pType === "OIE") {
-      return this.state.validity.oie;
+    if (pType === "MODEL") {
+      return this.state.validity.model;
     } else if (pType === "DP") {
       return this.state.validity.dp;
     } else if (pType === "NER-OIE") {
@@ -110,7 +110,7 @@ class Results extends React.Component {
     }
   }
   getResultArr(pType) {
-    if (pType === "OIE") {
+    if (pType === "MODEL") {
       return this.state.oieResults;
     } else if (pType === "DP") {
       return this.state.dpResults;
@@ -124,7 +124,7 @@ class Results extends React.Component {
     let result_instance = this.getResultArr(result.pType)[result.index];
     for (let idx in this.state.oieResults) {
       let instance = this.state.oieResults[idx];
-      if (equal(instance, result_instance)) this.getValidityArr("OIE")[idx] = this.getValidityArr(result.pType)[result.index];
+      if (equal(instance, result_instance)) this.getValidityArr("MODEL")[idx] = this.getValidityArr(result.pType)[result.index];
     }
     for (let idx in this.state.dpResults) {
       let instance = this.state.dpResults[idx];
@@ -143,7 +143,7 @@ class Results extends React.Component {
       validity : Whether instance is valid
      */
   instanceValidation = (result) => {
-    if (result.pType === "OIE" || result.pType === "DP" || result.pType === "NER-OIE") {
+    if (result.pType === "MODEL" || result.pType === "DP" || result.pType === "NER-OIE") {
       let validityArr = this.getValidityArr(result.pType);
       validityArr[result.index] = (result.validity) ? 1 : 0;
       this.setValidityDuplicate(result);
@@ -182,7 +182,7 @@ class Results extends React.Component {
   render() {
     return (
       <div className="Results">
-        <div className="Results-Subheader"> OIE Results </div>
+        <div className="Results-Subheader"> Model Results </div>
         <Table selectable className="Results-Table">
           <Table.Body>{this.state.oieResLines}</Table.Body>
         </Table>

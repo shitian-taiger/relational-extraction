@@ -19,7 +19,7 @@ class Predictor extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      ARGSELECTINFO: "Highlight text and set as desired argument, `Add Relation` row below will be updated correspondinly (Note this only works for text within the current box)",
+      ARGSELECTINFO: "Highlight text and set as desired argument, `Add Relation` row below will be updated correspondingly (Note this only works for text within the current box)",
       sentence: "",
       selectedText: ""
     };
@@ -78,8 +78,7 @@ class SentenceInput extends React.Component {
     super(props);
     this.state = {
       sentence: "",
-      oie_predict_url: IP + "/predict/all",
-      oie_results: [],
+      predict_url: IP + "/predict/all",
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -95,14 +94,14 @@ class SentenceInput extends React.Component {
   // Allow `Enter` keypress to simulate button clicking
   handleKeyPress(target) {
     if(target.charCode === 13) { // `Enter` keycode
-      submitter(this.state.oie_predict_url, this.state.sentence)
+      submitter(this.state.predict_url, this.state.sentence)
         .then((res) => this.props.onResultReceived(this.state.sentence, res))
         .catch((err) => alert("Server Error"));
     }
   }
   handleSubmit(event) {
     event.preventDefault();
-    submitter(this.state.oie_predict_url, this.state.sentence)
+    submitter(this.state.predict_url, this.state.sentence)
       .then((res) => this.props.onResultReceived(this.state.sentence, res))
       .catch((err) => alert("Server Error"));
   }

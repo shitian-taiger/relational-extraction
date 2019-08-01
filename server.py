@@ -6,7 +6,7 @@ from pathlib import Path
 
 # Model
 from model_implementation.trainer import Trainer
-from model_implementation.main import model_config, training_config
+from main import get_model_training_config
 
 # Instance generation
 from generation.allen_models import DepParse
@@ -20,6 +20,7 @@ import sqlite3
 app = Flask(__name__)
 CORS(app)
 
+model_config, training_config = get_model_training_config(Path.joinpath(Path(__file__).parent.resolve(), 'model_implementation'))
 model_trainer = Trainer(model_config, training_config)
 oie_generator = OpenIE()
 dependency_parser = DepParse()
@@ -69,15 +70,15 @@ def skip_sentence():
 
 
 @app.route('/predict/all', methods=['POST'])
-def predict_oie():
+def predict_relations():
     data = request.get_json(force=True)
     sentence = data["sentence"]
 
-    oie_prediction = oie_generator.get_tuples(sentence)
+    model_prediction = model_trainer.predict(sentence)
     dp_prediction = generate(dependency_parser.get_tree(sentence)) # Get tree from dependency parse first
     instance, ner_oie_prediction = ner_oie_generator.generate(sentence)
     return jsonify({
-        "oie_prediction": oie_prediction,
+        "model_prediction": model_prediction,
         "dp_prediction": dp_prediction,
         "ner_oie_prediction": ner_oie_prediction
         })

@@ -1,56 +1,53 @@
+import re
 from pathlib import Path
 from model_implementation.trainer import Trainer
 
-# Implementation root
-impl_root = Path.joinpath(Path(__file__).parent.resolve(), 'model_implementation')
+def get_model_training_config(impl_root: str):
 
-# Data
-traindata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated_instances.txt")
-testdata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated_instances_test.txt")
+    # Data
+    traindata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated_instances.txt")
+    testdata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated_instances_test.txt")
 
-# ALLEN OIE config
-# weights_dir = Path.joinpath(impl_root, "AllenOIE/weights")
-# tokens_dir = Path.joinpath(impl_root, "AllenOIE/tokens")
-# labels_dir = Path.joinpath(impl_root, "AllenOIE/labels") # This is the same as the weights dir for now
-# verb_embedding = Path.joinpath(impl_root, "AllenOIE/verb_embedder")
+    # Custom config
+    weights_dir = None
+    tokens_dir = Path.joinpath(impl_root, "Custom/tokens")
+    pos_dir = Path.joinpath(impl_root, "Custom/pos")
+    ne_emb_path = None
+    labels_dir = Path.joinpath(impl_root, "Custom/labels")
+    predict_path = Path.joinpath(impl_root, "saved/model_epoch5")
 
-# Custom config
-weights_dir = None
-tokens_dir = Path.joinpath(impl_root, "Custom/tokens")
-pos_dir = Path.joinpath(impl_root, "Custom/pos")
-ne_emb_path = None
-labels_dir = Path.joinpath(impl_root, "Custom/labels")
-predict_path = Path.joinpath(impl_root, "saved/model_epoch5")
+    # Ensure tokens_dir, pos_dir and labels_dir are present considering they all required for vocabulary generation
+    # weights_dir and ne_dir can be `None`
+    model_config = {
+        "input_size": 200,
+        "hidden_size": 300,
+        "highway": True,
+        "dropout": 0.2, # Irrelevant for now
+        "layers": 8,
+        "weights_dir": weights_dir,
+        "tokens_dir": tokens_dir,
+        "pos_dir": pos_dir,
+        "labels_dir": labels_dir,
+        "token_embedding_dim": 100,
+        "ne_embedding_dim": 50,
+        "pos_embedding_dim": 50,
+        "predict_path": predict_path
+    }
 
-# Ensure tokens_dir, pos_dir and labels_dir are present considering they all required for vocabulary generation
-# weights_dir and ne_dir can be `None`
-model_config = {
-    "input_size": 200,
-    "hidden_size": 300,
-    "highway": True,
-    "dropout": 0.2, # Irrelevant for now
-    "layers": 8,
-    "weights_dir": weights_dir,
-    "tokens_dir": tokens_dir,
-    "pos_dir": pos_dir,
-    "labels_dir": labels_dir,
-    "token_embedding_dim": 100,
-    "ne_embedding_dim": 50,
-    "pos_embedding_dim": 50,
-    "predict_path": predict_path
-}
+    save_path = Path.joinpath(impl_root, "saved")
 
-save_path = Path.joinpath(impl_root, "saved")
+    training_config = {
+        "epochs": 100,
+        "batch_size": 5,
+        "learning_rate": 0.001,
+        "traindata_file": traindata_file,
+        "testdata_file": testdata_file,
+        "save_on_epochs": 5, # Every x number of epochs to save on
+        "save_path": save_path
+    }
 
-training_config = {
-    "epochs": 100,
-    "batch_size": 5,
-    "learning_rate": 0.001,
-    "traindata_file": traindata_file,
-    "testdata_file": testdata_file,
-    "save_on_epochs": 5, # Every x number of epochs to save on
-    "save_path": save_path
-}
+    return model_config, training_config
+
 
 sentences = [
     "Knox continued to work for the East India Company for thirteen years after his return from the East, captaining the ship Tonqueen Merchant for four further voyages to the East.",
@@ -65,14 +62,21 @@ sentences = [
     "Bob got his master's degree from the University Of Chainsaws.",
     "Bob got his Phd from the University Of Chanad.",
     "Bob is currently a student in Xaunity University.",
+    "Bob walked into the Couldola Mall.",
     "This $1 stamp features a screen painting by Japanese painter Houitsu Sakai..",
     "As part of the island’s upgrading works, a $100,000 interactive Sounds of Siloso exhibit was added to the Fort’s tunnel system in 1987..",
     "This $2 Singapore Biennale stamp was issued by Singapore Post on 13 September 2006..",
-    "Postcard bearing King George V 1-cent green stamp, used in Federated Malay States (FMS) in 1916."
+    "Postcard bearing King George V 1-cent green stamp, used in Federated Malay States (FMS) in 1916.",
+    "Meanwhile, the ’80s saw a turning point in Goh’s opera vocation."
              ]
 
 if __name__ == "__main__":
-    TRAIN = True
+
+    # Implementation root
+    impl_root = Path.joinpath(Path(__file__).parent.resolve(), 'model_implementation')
+
+    TRAIN = False
+    model_config, training_config = get_model_training_config(impl_root)
     trainer = Trainer(model_config, training_config)
     if TRAIN:
         trainer.train()
