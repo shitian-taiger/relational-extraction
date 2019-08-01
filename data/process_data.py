@@ -51,7 +51,7 @@ def process_nhb(instance_file):
     df = pd.read_csv('../data/ExtractedRelations.csv', sep=',')
 
     # Currently processed till 87000
-    df = df[200000:] # Chinese characters
+    df = df[87000:200000] # To omit Chinese characters, < 250000
     num_tagged = 0
     with open(instances_file, "a+") as iob_file:
         for index, row in df.iterrows():
@@ -148,8 +148,8 @@ def instance_to_iob(sentence: str, instance: Tuple):
 
 
 if __name__ == "__main__":
-    instances_file = Path.joinpath(Path(__file__).parent, "generated_instances_validation.txt")
-    # process_nhb(instances_file)
+    instances_file = Path.joinpath(Path(__file__).parent, "generated_instances.txt")
+    process_nhb(instances_file)
     # process_db(instances_file)
 
 

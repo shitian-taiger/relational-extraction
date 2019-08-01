@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # Implementation root
     impl_root = Path.joinpath(Path(__file__).parent.resolve(), 'model_implementation')
 
-    TRAIN = False
+    TRAIN = True
     model_config, training_config = get_model_training_config(impl_root)
     trainer = Trainer(model_config, training_config)
     if TRAIN:

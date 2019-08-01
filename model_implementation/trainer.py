@@ -42,6 +42,7 @@ class Trainer:
                 -- save_path: Directory of model save folder
 
         """
+        self.model_config = model_config
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.vocab = Vocabulary(model_config["tokens_dir"])
@@ -73,6 +74,12 @@ class Trainer:
         epochs = self.training_config["epochs"]
 
         print("=================================================")
+        print("Embedding dimensions: [GLOVE: {}] | [POS: {}] | [ENT-MASK: {}]".format(
+            self.model_config["token_embedding_dim"],
+            self.model_config["pos_embedding_dim"],
+            self.model_config["ne_embedding_dim"]
+            ))
+        print("Bi-LSTM depth: {}".format(self.model_config["layers"]))
         print("Total Epochs: {}".format(self.training_config["epochs"]))
         print("Batch Size: {}".format(self.training_config["batch_size"]))
         print("Saving on every {} epochs.".format(self.training_config["save_on_epochs"]))
@@ -81,7 +88,7 @@ class Trainer:
 
         # TODO Shuffling of data and Validation Set (Currently unable to process entire file all at once)
         for epoch in range(1, epochs + 1):
-            print("Epoch {}\n--------------------------------------------------\n".format(epoch))
+            print("Epoch {}\n--------------------------------------------------".format(epoch))
 
             start_time = time.time()
 
@@ -103,11 +110,15 @@ class Trainer:
 
                     elapsed_time = time.time() - start_time
 
-                    print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
-                        batch_num, total_loss / batch_num, total_f1 / batch_num), end="")
+                    if batch_num % 100 == 0:
+                        print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {}".format(
+                            batch_num, total_loss / batch_num, total_f1 / batch_num), end="")
+                    else:
+                        print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
+                            batch_num, total_loss / batch_num, total_f1 / batch_num), end="")
 
                 except Exception as e:
-                    print("Exception: {}\n".format(e))
+                    print("\nException: {}".format(e))
 
             print("Total num batches: {} | Loss (Cumulative): {} | F1 (Cumulative): {}".format(
                 batch_num, total_loss / batch_num, total_f1 / batch_num))
@@ -129,7 +140,7 @@ class Trainer:
                         batch_num, test_total_loss / batch_num, test_total_f1 / batch_num), end="")
 
                 except Exception as e:
-                    print("Exception: {}\n".format(e))
+                    print("\nException: {}".format(e))
 
             print("Loss (Cumulative): {} | F1 (Cumulative): {}".format(
                 batch_num, test_total_loss / batch_num, test_total_f1 / batch_num))
@@ -164,7 +175,12 @@ class Trainer:
             "tags_list": output_tags, # Mutiple tag ouputs possible per sentence
             "vectorized_instances": vectorized_sentence
             })
-        return rel_tuples
+
+        rel_tuples_split = [] # Split list of relations per two entities to separate instances
+        for rel_tuple in rel_tuples:
+            rel_tuples_split += [(rel_tuple[0], relation, rel_tuple[2]) for relation in rel_tuple[1]]
+
+        return rel_tuples_split
 
 
     def _preprocess_batch_tagless(self, instances_dict):
@@ -224,13 +240,12 @@ class Trainer:
             (Precision, Recall, F1, Support[Not applicable]) : List[int]
         """
         assert(len(batch_labels) == len(predicted_labels))
-
         gold_labels = []
         for single_batch_tags in batch_labels:
             gold_labels.append([self.labels.get_index_from_word(tag) for tag in single_batch_tags])
         gold_labels = [j for epoch in gold_labels for j in epoch]
         predicted_labels = [j for epoch in predicted_labels for j in epoch]
-        return precision_recall_fscore_support(gold_labels, predicted_labels, average='weighted')
+        return precision_recall_fscore_support(gold_labels, predicted_labels, average='weighted', warn_for=tuple())
 
 
     def _parse_tags(self, output_dict: Dict):
