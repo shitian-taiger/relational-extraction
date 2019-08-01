@@ -148,9 +148,15 @@ def instance_to_iob(sentence: str, instance: Tuple):
 
 
 if __name__ == "__main__":
-    instances_file = Path.joinpath(Path(__file__).parent, "generated_instances.txt")
-    process_nhb(instances_file)
-    # process_db(instances_file)
+
+    generated_folder = Path(Path.joinpath(Path(__file__).parent, "generated/"))
+    generated_folder.mkdir(parents=True, exist_ok=True)
+
+    db_instances_file = Path.joinpath(generated_folder, "db_generated_instances.txt")
+    process_db(db_instances_file)
+
+    # nhb_instances_file = Path.joinpath(generated_folder, "nhb_generated_instances.txt")
+    # process_nhb(nhb_instances_file)
 
 
 

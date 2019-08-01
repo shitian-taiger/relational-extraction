@@ -5,16 +5,22 @@ from model_implementation.trainer import Trainer
 def get_model_training_config(impl_root: str):
 
     # Data
-    traindata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated_instances.txt")
-    testdata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated_instances_test.txt")
+    traindata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated/db_generated_instances.txt")
+    testdata_file = Path.joinpath(impl_root.parent.resolve(), "data/generated/db_generated_instances.txt")
 
-    # Custom config
+    # Model savepath
+    save_path = Path.joinpath(impl_root, "db_saved")
+    num_epochs_per_save = 5
+
+    # Saved model path for prediction
+    predict_path = Path.joinpath(impl_root, "db_saved/model_epoch5")
+
+    # Custom configurations
     weights_dir = None
     tokens_dir = Path.joinpath(impl_root, "Custom/tokens")
     pos_dir = Path.joinpath(impl_root, "Custom/pos")
     ne_emb_path = None
     labels_dir = Path.joinpath(impl_root, "Custom/labels")
-    predict_path = Path.joinpath(impl_root, "saved/model_epoch5")
 
     # Ensure tokens_dir, pos_dir and labels_dir are present considering they all required for vocabulary generation
     # weights_dir and ne_dir can be `None`
@@ -34,15 +40,13 @@ def get_model_training_config(impl_root: str):
         "predict_path": predict_path
     }
 
-    save_path = Path.joinpath(impl_root, "saved")
-
     training_config = {
         "epochs": 100,
-        "batch_size": 5,
+        "batch_size": 10,
         "learning_rate": 0.001,
         "traindata_file": traindata_file,
         "testdata_file": testdata_file,
-        "save_on_epochs": 5, # Every x number of epochs to save on
+        "save_on_epochs": num_epochs_per_save, # Every x number of epochs to save on
         "save_path": save_path
     }
 

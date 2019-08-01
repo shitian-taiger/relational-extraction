@@ -73,18 +73,7 @@ class Trainer:
         batch_size = self.training_config["batch_size"]
         epochs = self.training_config["epochs"]
 
-        print("=================================================")
-        print("Embedding dimensions: [GLOVE: {}] | [POS: {}] | [ENT-MASK: {}]".format(
-            self.model_config["token_embedding_dim"],
-            self.model_config["pos_embedding_dim"],
-            self.model_config["ne_embedding_dim"]
-            ))
-        print("Bi-LSTM depth: {}".format(self.model_config["layers"]))
-        print("Total Epochs: {}".format(self.training_config["epochs"]))
-        print("Batch Size: {}".format(self.training_config["batch_size"]))
-        print("Saving on every {} epochs.".format(self.training_config["save_on_epochs"]))
-        print("Model Save Path: {}".format(self.training_config["save_path"]))
-        print("=================================================")
+        self.print_info()
 
         # TODO Shuffling of data and Validation Set (Currently unable to process entire file all at once)
         for epoch in range(1, epochs + 1):
@@ -126,8 +115,8 @@ class Trainer:
             print(time.strftime("\nTime taken for epoch: %H:%M:%S", time.gmtime(elapsed_time)))
 
             print("================= Test ==========================")
+            batch_num, test_total_loss, test_total_f1 = 0, 0, 0
             for batch_tokens, batch_tags, batch_pos in get_next_batch(batch_size, self.training_config["testdata_file"]):
-                test_total_loss, test_total_f1 = 0, 0
                 try:
                     model_input = self._preprocess_batch(batch_tokens, batch_tags, batch_pos)
                     output = self.model(model_input)
@@ -136,6 +125,7 @@ class Trainer:
                     precision, recall, f1, _ = self._get_batch_stats(batch_tags, predicted_labels)
                     test_total_loss += loss.item()
                     test_total_f1 += f1
+                    batch_num += 1
                     print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
                         batch_num, test_total_loss / batch_num, test_total_f1 / batch_num), end="")
 
@@ -151,6 +141,23 @@ class Trainer:
                 print("\nSaving model for epoch {}".format(epoch))
                 print("========================================")
                 torch.save(self.model.state_dict(), Path.joinpath(self.training_config["save_path"], "model_epoch{}".format(epoch)))
+
+
+    def print_info(self):
+        print("=================================================")
+        print("Embedding dimensions: [GLOVE: {}] | [POS: {}] | [ENT-MASK: {}]".format(
+            self.model_config["token_embedding_dim"],
+            self.model_config["pos_embedding_dim"],
+            self.model_config["ne_embedding_dim"]
+            ))
+        print("Bi-LSTM depth: {}".format(self.model_config["layers"]))
+        print("Total Epochs: {}".format(self.training_config["epochs"]))
+        print("Batch Size: {}".format(self.training_config["batch_size"]))
+        print("Train data path: {}".format(self.training_config["traindata_file"]))
+        print("Test data path: {}".format(self.training_config["testdata_file"]))
+        print("Saving on every {} epochs.".format(self.training_config["save_on_epochs"]))
+        print("Model Save Path: {}".format(self.training_config["save_path"]))
+        print("=================================================")
 
 
     def predict(self, sentence: str):

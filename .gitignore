@@ -5,7 +5,7 @@
 __pycache__/
 data/OIE
 data/RE
-data/generated_instances.txt
+data/generated/
 brat_preprocessing/annotated
 generation/archived_models
 model_implementation/glove.6B

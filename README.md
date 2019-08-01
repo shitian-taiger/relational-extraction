@@ -59,7 +59,8 @@ NegativeInstance
 |---------|-----|---------|
 ```
 
-For generation of data after tagging, run `process_db()` in `data/process_data.py`
+For generation of data after tagging, run `process_db()` in `data/process_data.py`\
+Generated data will be producted in folder `data/generated/`
 
 ## Data Generation Helper
 
