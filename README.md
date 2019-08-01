@@ -2,7 +2,7 @@
 
 ![Relational Extraction Intro](https://raw.githubusercontent.com/shitian-taiger/relational-extraction/master/images/re_info.png)
 
-_For more information on please refer to the FAQ section on the front-end UI_
+_For more information on please refer to the FAQ section on the front-end UI as well as documentation found at_ https://taiger.atlassian.net/wiki/spaces/NLP/pages/703791197/OpenRE+Overview
 
 ## Setup
 

@@ -2,6 +2,7 @@
 
 ## Setup
 
+Downloading and extraction of GLOVE Embeddings: `download.py`\
 For replication of Allen OIE model refer to branch: `base` and set `DOWNLOAD_ALLEN_OIE = True` in `download.py`
 
 ### Configuration
@@ -55,6 +56,9 @@ Implemented model structure is largely drawn from AllenNLP.\
 
 
 ### Model Changes
+
+Reference: https://taiger.atlassian.net/wiki/spaces/NLP/pages/705495046/OpenRE+as+Sequence+Labelling+Task
+
 - Switched one-hot encoded predicate vector:\
 `[1 if idx == B-pred_index else 0 for idx in len(tokens)]`\
 to Entity tagging vector:\
@@ -70,7 +74,7 @@ For reference: https://github.com/explosion/spaCy/blob/master/spacy/lang/en/tag_
 ## Training and Prediction
 
 Command Line utility not yet implemented.\
-Entry point: `main.py` in root folder
+Entry point and configurations: `main.py` in root folder
 
 For Prediction purposes, upstream process of NER is required. Currently defaults to spacy NER, for alterations refer to:\
 `model_implementation/model/utils.py` function `_get_entity_idx_map`

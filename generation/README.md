@@ -17,6 +17,8 @@ The processing of the dependency structure is broken down into:
 - Determination of General SUBJ/ROOT/OBJ structure `generate/dependency_parse/main.py`
 - Processing of common patterns within determined structured `generate/dependency_parse/evaluator.py`
 
+For a more comprehensive overview, refer to: https://taiger.atlassian.net/wiki/spaces/NLP/pages/704905231/OpenRE+Data+Generation
+
 #### Common parse structures
 The following represent common structures of parsed sentences, which can be classified into the following forms. (List is not non-exhaustive).
 

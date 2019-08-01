@@ -10,3 +10,5 @@
 
 ### UI Interface
 ![Image of Front End UI](https://raw.githubusercontent.com/shitian-taiger/relational-extraction/master/images/ui.png)
+
+For an overview of UI usage, refer to: https://taiger.atlassian.net/wiki/spaces/NLP/pages/704643145/OpenRE+Data+Generation+UI

@@ -111,8 +111,8 @@ class Trainer:
                     elapsed_time = time.time() - start_time
 
                     if batch_num % 100 == 0:
-                        print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {}".format(
-                            batch_num, total_loss / batch_num, total_f1 / batch_num), end="")
+                        print("\nBatch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {}".format(
+                            batch_num, total_loss / batch_num, total_f1 / batch_num))
                     else:
                         print("Batch num: {} | Loss (Cumulative): {} | F1 (Cumulative): {} \r".format(
                             batch_num, total_loss / batch_num, total_f1 / batch_num), end="")
