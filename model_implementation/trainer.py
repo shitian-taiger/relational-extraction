@@ -77,7 +77,7 @@ class Trainer:
 
         # TODO Shuffling of data and Validation Set (Currently unable to process entire file all at once)
         for epoch in range(1, epochs + 1):
-            print("Epoch {}\n--------------------------------------------------".format(epoch))
+            print("\nEpoch {}\n--------------------------------------------------".format(epoch))
 
             start_time = time.time()
 

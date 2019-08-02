@@ -10,6 +10,7 @@ def get_model_training_config(impl_root: str):
 
     # Model savepath
     save_path = Path.joinpath(impl_root, "db_saved")
+    save_path.mkdir(parents=True, exist_ok=True)
     num_epochs_per_save = 5
 
     # Saved model path for prediction
